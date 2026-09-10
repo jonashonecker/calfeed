@@ -107,10 +107,12 @@ export function createApp(store = new SqliteStore()) {
     return { user: decoded.slice(0, i), pass: decoded.slice(i + 1) };
   }
 
-  function subscribeUrls(cal) {
+  // Baut die Abo-URLs aus dem KLARTEXT-feed_token. Die DB kennt nur den Hash,
+  // daher muss das Klartext-Token vom Aufrufer (create/rotate) übergeben werden.
+  function subscribeUrls(feedToken) {
     return {
-      subscribe_url: `${BASE_URL}/cal/${cal.feed_token}.ics`,
-      webcal_url: `${BASE_URL.replace(/^https?/, 'webcal')}/cal/${cal.feed_token}.ics`,
+      subscribe_url: `${BASE_URL}/cal/${feedToken}.ics`,
+      webcal_url: `${BASE_URL.replace(/^https?/, 'webcal')}/cal/${feedToken}.ics`,
     };
   }
 
@@ -152,7 +154,7 @@ export function createApp(store = new SqliteStore()) {
         if (!body.name) return send(res, 400, { error: 'name required' });
         const cal = store.createCalendar(body.name);
         return send(res, 201, {
-          id: cal.id, name: cal.name, token: cal.token, ...subscribeUrls(cal),
+          id: cal.id, name: cal.name, token: cal.token, ...subscribeUrls(cal.feed_token),
         });
       }
 
@@ -161,9 +163,8 @@ export function createApp(store = new SqliteStore()) {
       if (req.method === 'POST' && m) {
         const cal = store.findCalendarByToken(bearer(req));
         if (!cal || cal.id !== m[1]) return send(res, 401, { error: 'valid calendar token required' });
-        store.rotateFeedToken(cal.id);
-        const updated = store.getCalendar(cal.id);
-        return send(res, 200, { rotated: true, ...subscribeUrls(updated) });
+        const newFeedToken = store.rotateFeedToken(cal.id);
+        return send(res, 200, { rotated: true, ...subscribeUrls(newFeedToken) });
       }
 
       // PUT /calendars/:id/feed-password — Basic Auth setzen/löschen (Kalender-Token)

@@ -178,3 +178,41 @@ GET {{feed_v3}}
 HTTP 200
 [Asserts]
 body contains "BEGIN:VCALENDAR"
+
+# ── SECURITY: token hashing is transparent to the client ─────────
+# The DB stores only SHA-256 hashes (verified out-of-band via sqlite3),
+# but the client still receives a working plaintext token + feed URL.
+# This blackbox test proves that round-trip: create → push with the
+# returned token → read the feed over the returned URL.
+POST {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+{
+  "name": "Hashing transparency"
+}
+HTTP 201
+[Captures]
+hx_token: jsonpath "$.token"
+hx_feed_url: jsonpath "$.subscribe_url"
+[Asserts]
+# returned token is a real value, not a hash placeholder
+jsonpath "$.token" exists
+jsonpath "$.token" matches /^[A-Za-z0-9_-]+$/
+jsonpath "$.subscribe_url" contains "/cal/"
+jsonpath "$.subscribe_url" endsWith ".ics"
+
+# the plaintext token works for pushing an event (hash lookup is transparent)
+POST {{base}}/events
+Authorization: Bearer {{hx_token}}
+{
+  "uid": "transparency-1",
+  "summary": "Hashing works",
+  "dtstart": "2026-09-12T09:00:00Z"
+}
+HTTP 201
+
+# the plaintext feed URL resolves and returns the event (hash lookup transparent)
+GET {{hx_feed_url}}
+HTTP 200
+[Asserts]
+body contains "BEGIN:VCALENDAR"
+body contains "SUMMARY:Hashing works"
