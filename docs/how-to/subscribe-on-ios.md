@@ -6,12 +6,18 @@ and on the calendar widget.
 ## Get the webcal URL
 
 When you create a calendar, the response includes a `webcal_url`, such as
-`webcal://calfeed.example.com/cal/3f9a2b1c.ics`. iOS treats a `webcal://` link as a
-subscription, so this is the value you need. To create a calendar, see
+`webcal://calfeed.example.com/cal/9Xk3...token....ics`. The URL carries the calendar's long
+feed token. iOS treats a `webcal://` link as a subscription, so this is the value you need.
+To create a calendar, see
 [Create your first feed](/docs/tutorial/create-your-first-feed.md).
 
 If you only have the `subscribe_url`, an `http://` or `https://` link, swap its scheme
 for `webcal://`. The rest of the URL stays the same.
+
+If the feed has a password, put the username and password in the URL, in the form
+`webcal://user:password@host/cal/<feed_token>.ics`. calfeed accepts any username. To set a
+feed password, see
+[Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
 
 ## Open the link on the device
 
@@ -42,3 +48,4 @@ and uses more battery.
 
 - To push events to the feed, read [Push events from a script](/docs/how-to/push-events-from-a-script.md).
 - To learn why the feed stays read-only, read [Why read-only feeds](/docs/explanation/why-read-only-feeds.md).
+- To understand how feed tokens and passwords protect a feed, read [Feed privacy](/docs/explanation/feed-privacy.md).

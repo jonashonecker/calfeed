@@ -44,13 +44,15 @@ The response is a JSON object:
   "id": "3f9a2b1c",
   "name": "Family",
   "token": "Yy8Qb...redacted...",
-  "subscribe_url": "http://localhost:8787/cal/3f9a2b1c.ics",
-  "webcal_url": "webcal://localhost:8787/cal/3f9a2b1c.ics"
+  "subscribe_url": "http://localhost:8787/cal/9Xk3...feed-token....ics",
+  "webcal_url": "webcal://localhost:8787/cal/9Xk3...feed-token....ics"
 }
 ```
 
 Copy the `token` and the `id`. The `token` is the only credential that can write to this
-calendar, so keep it private. To learn why each calendar has its own token, see
+calendar, so keep it private. The `subscribe_url` and `webcal_url` already contain the
+calendar's long feed token, which is what a calendar app subscribes to. To learn why each
+calendar has its own token, see
 [A token per calendar](/docs/explanation/token-per-calendar.md).
 
 ## Push an event
@@ -82,10 +84,11 @@ To push events from a script and update them later, see
 ## Fetch the feed
 
 The feed is public and needs no token, because that's what a calendar app subscribes to.
-Fetch it with the calendar `id`:
+Fetch it with the `subscribe_url` from the create-calendar step, which contains the feed
+token:
 
 ```bash
-curl http://localhost:8787/cal/3f9a2b1c.ics
+curl http://localhost:8787/cal/9Xk3...feed-token....ics
 ```
 
 The response is `text/calendar` and contains your event:

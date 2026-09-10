@@ -7,6 +7,10 @@ Calendar widget.
 calfeed is a zero-dependency Node backend. It runs on Node 26 and stores data in SQLite
 through the built-in `node:sqlite` module.
 
+Each feed lives at a long, unguessable feed token that you can rotate if a URL leaks, and
+you can protect a feed with a password through HTTP Basic authentication. See
+[Feed privacy](/docs/explanation/feed-privacy.md).
+
 ## Quickstart
 
 Start the server with an administrator token:
@@ -30,8 +34,8 @@ curl -X POST http://localhost:8787/events \
   -H "Content-Type: application/json" \
   -d '{"summary":"Dinner","dtstart":"2026-09-10T17:00:00Z"}'
 
-# Read the feed (public, no token)
-curl http://localhost:8787/cal/<calendar-id>.ics
+# Read the feed (the subscribe_url from the create response carries the feed token)
+curl http://localhost:8787/cal/<feed-token>.ics
 ```
 
 Then subscribe to the feed in your calendar app. For the full walk-through, see
@@ -49,6 +53,8 @@ Then subscribe to the feed in your calendar app. For the full walk-through, see
 
 - [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md)
 - [Push events from a script](/docs/how-to/push-events-from-a-script.md)
+- [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md)
+- [Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md)
 
 ## 🔍 Reference
 >
@@ -63,3 +69,4 @@ Then subscribe to the feed in your calendar app. For the full walk-through, see
 
 - [Why read-only feeds](/docs/explanation/why-read-only-feeds.md)
 - [A token per calendar](/docs/explanation/token-per-calendar.md)
+- [Feed privacy](/docs/explanation/feed-privacy.md)

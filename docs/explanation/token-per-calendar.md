@@ -21,13 +21,15 @@ point the writer at the new token.
 
 ## The reader needs no token at all
 
-The feed is public and read-only, so subscribing needs no token. That keeps the calendar
-`id` and the write token in separate roles: the `id` is shareable and safe to put in a
-subscription URL, while the token stays private to the writer. The `id` is a short,
-unguessable value, so the feed stays effectively private without a login step in the
-calendar app.
+The feed only serves data, so subscribing needs no calendar token. Instead, the feed lives
+at a long, unguessable feed token in the subscribe URL, separate from both the calendar `id`
+and the write token. The `id` and the write token stay private to the writer, while the feed
+token is the only value a subscriber needs. You can rotate the feed token if a URL leaks,
+or add a password for stronger protection. See
+[Feed privacy](/docs/explanation/feed-privacy.md).
 
 ## Related
 
 - To create a calendar and get its token, read [Create your first feed](/docs/tutorial/create-your-first-feed.md).
 - To see how the tokens appear in requests, read [API reference](/docs/reference/api.md).
+- To understand how the feed token and password keep a feed private, read [Feed privacy](/docs/explanation/feed-privacy.md).

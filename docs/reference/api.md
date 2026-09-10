@@ -1,6 +1,6 @@
 # API reference
 
-calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete events, and calendar apps read the public feed.
+calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete events, and calendar apps read the feed.
 
 ## Base URL
 
@@ -14,9 +14,12 @@ calfeed uses two kinds of Bearer token in the `Authorization` header.
 | Token | Set by | Grants |
 |---|---|---|
 | Administrator token | `CALFEED_ADMIN_TOKEN` | Creating calendars. |
-| Calendar token | Returned when you create a calendar | Writing to and deleting from that one calendar. |
+| Calendar token | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
 
-The public feed at `GET /cal/:id.ics` needs no token.
+The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable
+`feed_token` in the URL controls who can reach it. If the calendar has a feed password,
+the feed also requires HTTP Basic authentication. See
+[Feed privacy](/docs/explanation/feed-privacy.md).
 
 ## Endpoints
 
@@ -36,10 +39,10 @@ Returns `201` with:
 
 | Field | Description |
 |---|---|
-| `id` | Public calendar identifier used in the feed URL. |
+| `id` | Calendar identifier used with the calendar token to manage the calendar. |
 | `name` | The name you sent. |
-| `token` | Calendar token for pushing events. Keep it private. |
-| `subscribe_url` | `http` or `https` URL of the feed. |
+| `token` | Calendar token for writing and management. Keep it private. |
+| `subscribe_url` | `http` or `https` URL of the feed, containing the feed token. |
 | `webcal_url` | Same URL with the `webcal` scheme, for iOS. |
 
 ### Add or update an event
@@ -73,24 +76,70 @@ Delete an event by `uid`. Requires the calendar token.
 Returns `200` with `{ "deleted": true }` if the event existed, or `404` with
 `{ "deleted": false }` if no event in the calendar has that `uid`.
 
+### Rotate the feed token
+
+`POST /calendars/:id/rotate-feed`
+
+Generate a new feed token for the calendar. Requires the calendar token, and the `:id` in
+the path must match that token's calendar. Use this when a subscribe URL leaks: the new
+token replaces the old one, so the previous subscribe URL returns `404`.
+
+Returns `200` with:
+
+| Field | Description |
+|---|---|
+| `rotated` | Always `true` on success. |
+| `subscribe_url` | New `http` or `https` feed URL with the new feed token. |
+| `webcal_url` | Same URL with the `webcal` scheme. |
+
+To walk through a rotation, see
+[Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
+
+### Set or clear the feed password
+
+`PUT /calendars/:id/feed-password`
+
+Turn HTTP Basic authentication on or off for the feed. Requires the calendar token, and
+the `:id` in the path must match that token's calendar.
+
+Request body:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `password` | string or null | Yes | A string turns on Basic authentication. `null` turns it off. |
+
+Returns `200` with:
+
+| Field | Description |
+|---|---|
+| `protected` | `true` if the feed now requires a password, `false` if it doesn't. |
+
+To walk through the setup, see
+[Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+
 ### Read the feed
 
-`GET /cal/:id.ics`
+`GET /cal/:feed_token.ics`
 
-Fetch the calendar feed. Public, no token. Returns `200` with `Content-Type:
+Fetch the calendar feed by its feed token. Returns `200` with `Content-Type:
 text/calendar` and the calendar in the iCalendar format defined by RFC 5545. The response
-carries a `Cache-Control: public, max-age=300` header, so clients can cache the feed for
+carries a `Cache-Control: private, max-age=300` header, so clients can cache the feed for
 300 seconds.
+
+If the calendar has a feed password, the feed requires HTTP Basic authentication. Send the
+password with any username. Without valid credentials, the server returns `401` with a
+`WWW-Authenticate: Basic` header. Calendar apps that support credentials in the URL accept
+the form `webcal://user:password@host/cal/:feed_token.ics`.
 
 ## Status codes
 
 | Code | Meaning |
 |---|---|
-| `200` | Success: event updated, event deleted, or feed returned. |
+| `200` | Success: event updated, event deleted, feed returned, token rotated, or password changed. |
 | `201` | The server created a calendar or a new event. |
 | `400` | A required field is missing: `name`, or `summary` and `dtstart`. |
-| `401` | The token is missing or wrong for the requested action. |
-| `404` | Unknown calendar, unknown event on delete, or unknown route. |
+| `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong. |
+| `404` | Unknown feed token, unknown calendar, unknown event on delete, or unknown route. |
 | `500` | The server hit an unexpected error. |
 
 ## Dates
