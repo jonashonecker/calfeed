@@ -1,0 +1,34 @@
+# Fly.io deployment for calfeed.
+# Adjust `app` to your chosen name, then: fly launch --no-deploy (once), fly deploy.
+# Secrets (admin token) are NOT stored here — set them with `fly secrets set`.
+
+app = "calfeed"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8787"
+  CALFEED_DB = "/data/calfeed.db"
+  # Set CALFEED_BASE_URL to your public URL after first deploy, e.g.
+  # fly secrets set CALFEED_BASE_URL=https://calfeed.fly.dev
+  # (kept out of [env] so the subscribe URLs use the real host)
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+# Persistent SQLite database. Create once with:
+#   fly volumes create calfeed_data --region fra --size 1
+[mounts]
+  source = "calfeed_data"
+  destination = "/data"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
