@@ -1,0 +1,15 @@
+{
+  "name": "calfeed",
+  "version": "0.1.0",
+  "description": "Minimal CRUD backend that serves subscribable read-only iCal (.ics) feeds. Push events via token, subscribe on any calendar app.",
+  "type": "module",
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test --test-force-exit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,14 @@
+calfeed
+iCal
+iCalendar
+webcal
+SQLite
+upsert
+UID
+uid
+JSON
+Netlify
+API
+Bearer
+VEVENT
+VCALENDAR
