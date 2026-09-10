@@ -70,3 +70,17 @@ Then subscribe to the feed in your calendar app. For the full walk-through, see
 - [Why read-only feeds](/docs/explanation/why-read-only-feeds.md)
 - [A token per calendar](/docs/explanation/token-per-calendar.md)
 - [Feed privacy](/docs/explanation/feed-privacy.md)
+
+## Tests
+
+The test suite is a set of language-independent black-box tests written in
+[Hurl](https://hurl.dev). They talk to a running server over HTTP only, so they
+keep working across refactors and rewrites in any language. Run them with:
+
+```bash
+npm test
+```
+
+The script starts calfeed with a throwaway database, runs every `.hurl` file in
+`test/`, and shuts the server down afterward.
+
