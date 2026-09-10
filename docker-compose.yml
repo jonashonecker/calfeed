@@ -1,0 +1,18 @@
+services:
+  calfeed:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      # Set a strong admin token. Override in a .env file or your shell.
+      CALFEED_ADMIN_TOKEN: ${CALFEED_ADMIN_TOKEN:-change-me}
+      # Public base URL used in subscribe_url / webcal_url.
+      CALFEED_BASE_URL: ${CALFEED_BASE_URL:-http://localhost:8787}
+      PORT: 8787
+    volumes:
+      # SQLite database persists across restarts in a named volume.
+      - calfeed-data:/data
+    restart: unless-stopped
+
+volumes:
+  calfeed-data:

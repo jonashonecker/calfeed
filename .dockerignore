@@ -1,0 +1,10 @@
+node_modules
+*.db
+*.db-shm
+*.db-wal
+.git
+.vale
+docs
+test
+.gitignore
+.dockerignore

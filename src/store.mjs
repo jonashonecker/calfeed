@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, randomBytes } from 'node:crypto';
 
 export class SqliteStore {
-  constructor(path = 'calfeed.db') {
+  constructor(path = process.env.CALFEED_DB || 'calfeed.db') {
     this.db = new DatabaseSync(path);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS calendars (
