@@ -12,3 +12,5 @@ API
 Bearer
 VEVENT
 VCALENDAR
+subscribable
+unparseable
