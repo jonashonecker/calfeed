@@ -1,5 +1,7 @@
 # calfeed
 
+<img src="docs/media/calfeed-logo.svg" alt="calfeed logo" width="120" align="right">
+
 Serve subscribable, read-only calendar feeds. Clients push events over a small HTTP API,
 and you subscribe to the resulting `.ics` feed in any calendar app, including the iOS
 Calendar widget.
