@@ -108,7 +108,11 @@ test('http: voller Flow — Kalender anlegen, Event pushen, .ics abrufen', async
   r = await req(base, 'POST', '/calendars', { token: 'admin123', body: { name: 'Fokus' } });
   assert.equal(r.status, 201);
   const { id, token, subscribe_url } = r.body;
-  assert.ok(subscribe_url.endsWith(`/cal/${id}.ics`));
+  assert.match(subscribe_url, /\/cal\/[\w-]+\.ics$/);
+  // Feed-Token ist lang und NICHT die kurze id (Stufe-2-Privacy)
+  const feedToken = subscribe_url.match(/\/cal\/([\w-]+)\.ics$/)[1];
+  assert.ok(feedToken.length >= 32, 'feed token should be long/unguessable');
+  assert.notEqual(feedToken, id);
 
   // 3. Event mit Kalender-Token pushen → 201
   r = await req(base, 'POST', '/events', {
@@ -121,8 +125,8 @@ test('http: voller Flow — Kalender anlegen, Event pushen, .ics abrufen', async
   r = await req(base, 'POST', '/events', { body: { summary: 'X', dtstart: '2026-09-10T10:00:00Z' } });
   assert.equal(r.status, 401);
 
-  // 5. .ics öffentlich abrufen → enthält das Event
-  const ics = await fetch(`${base}/cal/${id}.ics`);
+  // 5. .ics über feed_token abrufen → enthält das Event
+  const ics = await fetch(`${base}/cal/${feedToken}.ics`);
   assert.equal(ics.status, 200);
   assert.match(ics.headers.get('content-type'), /text\/calendar/);
   const body = await ics.text();
@@ -145,5 +149,90 @@ test('http: unbekannter Kalender → 404', async () => {
   const base = `http://localhost:${srv.address().port}`;
   const r = await fetch(`${base}/cal/doesnotexist.ics`);
   assert.equal(r.status, 404);
+  srv.close();
+});
+
+// ── Privacy: Feed-Token-Rotation (Stufe 2) ────────────────────────
+test('store: rotateFeedToken macht altes Token ungültig', () => {
+  const s = memStore();
+  const cal = s.createCalendar('X');
+  const oldToken = cal.feed_token;
+  assert.ok(s.getCalendarByFeedToken(oldToken), 'altes Token gültig vor Rotation');
+  const newToken = s.rotateFeedToken(cal.id);
+  assert.notEqual(newToken, oldToken);
+  assert.equal(s.getCalendarByFeedToken(oldToken), null, 'altes Token tot nach Rotation');
+  assert.ok(s.getCalendarByFeedToken(newToken), 'neues Token gültig');
+});
+
+test('http: rotate-feed — alte Abo-URL wird 404, neue funktioniert', async () => {
+  process.env.CALFEED_ADMIN_TOKEN = 'admin123';
+  const app = createApp(memStore());
+  const srv = await listen(app);
+  const base = `http://localhost:${srv.address().port}`;
+
+  let r = await req(base, 'POST', '/calendars', { token: 'admin123', body: { name: 'P' } });
+  const { id, token, subscribe_url } = r.body;
+  const oldFeed = subscribe_url.match(/\/cal\/([\w-]+)\.ics$/)[1];
+
+  // alte URL geht
+  assert.equal((await fetch(`${base}/cal/${oldFeed}.ics`)).status, 200);
+
+  // rotieren mit Kalender-Token
+  r = await req(base, 'POST', `/calendars/${id}/rotate-feed`, { token });
+  assert.equal(r.status, 200);
+  const newFeed = r.body.subscribe_url.match(/\/cal\/([\w-]+)\.ics$/)[1];
+  assert.notEqual(newFeed, oldFeed);
+
+  // alte URL jetzt tot, neue lebt
+  assert.equal((await fetch(`${base}/cal/${oldFeed}.ics`)).status, 404);
+  assert.equal((await fetch(`${base}/cal/${newFeed}.ics`)).status, 200);
+
+  // rotate mit falschem Token → 401
+  r = await req(base, 'POST', `/calendars/${id}/rotate-feed`, { token: 'falsch' });
+  assert.equal(r.status, 401);
+
+  srv.close();
+});
+
+// ── Privacy: HTTP Basic Auth (Stufe 3) ────────────────────────────
+test('http: feed-password aktiviert Basic Auth auf dem Feed', async () => {
+  process.env.CALFEED_ADMIN_TOKEN = 'admin123';
+  const app = createApp(memStore());
+  const srv = await listen(app);
+  const base = `http://localhost:${srv.address().port}`;
+
+  let r = await req(base, 'POST', '/calendars', { token: 'admin123', body: { name: 'Secret' } });
+  const { id, token, subscribe_url } = r.body;
+  const feed = subscribe_url.match(/\/cal\/([\w-]+)\.ics$/)[1];
+
+  // vor Passwort: öffentlich abrufbar
+  assert.equal((await fetch(`${base}/cal/${feed}.ics`)).status, 200);
+
+  // Passwort setzen (Kalender-Token)
+  r = await req(base, 'PUT', `/calendars/${id}/feed-password`, { token, body: { password: 'geheim' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.protected, true);
+
+  // ohne Credentials → 401 + WWW-Authenticate
+  let resp = await fetch(`${base}/cal/${feed}.ics`);
+  assert.equal(resp.status, 401);
+  assert.match(resp.headers.get('www-authenticate') || '', /Basic/);
+
+  // mit falschem Passwort → 401
+  const wrong = 'Basic ' + Buffer.from('x:falsch').toString('base64');
+  resp = await fetch(`${base}/cal/${feed}.ics`, { headers: { authorization: wrong } });
+  assert.equal(resp.status, 401);
+
+  // mit richtigem Passwort → 200
+  const ok = 'Basic ' + Buffer.from('user:geheim').toString('base64');
+  resp = await fetch(`${base}/cal/${feed}.ics`, { headers: { authorization: ok } });
+  assert.equal(resp.status, 200);
+  assert.match(await resp.text(), /BEGIN:VCALENDAR/);
+
+  // Passwort wieder entfernen → wieder öffentlich
+  r = await req(base, 'PUT', `/calendars/${id}/feed-password`, { token, body: { password: null } });
+  assert.equal(r.body.protected, false);
+  assert.equal((await fetch(`${base}/cal/${feed}.ics`)).status, 200);
+
   srv.close();
 });

@@ -1,20 +1,28 @@
 /**
- * Storage-Layer — abstrahiert, damit der Wechsel zu Netlify Blobs / Turso klein bleibt.
- * Interface: createCalendar, getCalendar, addEvent, listEvents, findCalendarByToken.
- * Diese Implementierung nutzt node:sqlite (in Node 22+ eingebaut, hier Node 26).
+ * Storage-Layer — abstrahiert, damit der Wechsel zu anderen Backends klein bleibt.
+ * Nutzt node:sqlite (in Node 22+ eingebaut).
+ *
+ * Privacy-Modell für Feeds:
+ *  - feed_token: langes Zufallstoken, steht in der Abo-URL (/cal/:feed_token.ics).
+ *    Nicht erratbar, rotierbar (bei Leak neues Token → alte URL tot).
+ *  - feed_password: optional. Wenn gesetzt, verlangt der Feed HTTP Basic Auth.
  */
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, randomBytes } from 'node:crypto';
+
+const newFeedToken = () => randomBytes(32).toString('base64url');
 
 export class SqliteStore {
   constructor(path = process.env.CALFEED_DB || 'calfeed.db') {
     this.db = new DatabaseSync(path);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS calendars (
-        id         TEXT PRIMARY KEY,
-        name       TEXT NOT NULL,
-        token      TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL
+        id            TEXT PRIMARY KEY,
+        name          TEXT NOT NULL,
+        token         TEXT NOT NULL UNIQUE,
+        feed_token    TEXT UNIQUE,
+        feed_password TEXT,
+        created_at    TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS events (
         id           TEXT PRIMARY KEY,
@@ -30,29 +38,68 @@ export class SqliteStore {
       );
       CREATE INDEX IF NOT EXISTS idx_events_cal ON events(calendar_id);
     `);
+    this._migrate();
+    // Index auf feed_token ERST nach der Migration (Spalte existiert dann sicher).
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_cal_feedtoken ON calendars(feed_token);`);
+  }
+
+  // Backward-kompatible Migration: alte Kalender ohne feed_token bekommen eins.
+  _migrate() {
+    const cols = this.db.prepare(`PRAGMA table_info(calendars)`).all().map(c => c.name);
+    if (!cols.includes('feed_token')) {
+      this.db.exec(`ALTER TABLE calendars ADD COLUMN feed_token TEXT`);
+    }
+    if (!cols.includes('feed_password')) {
+      this.db.exec(`ALTER TABLE calendars ADD COLUMN feed_password TEXT`);
+    }
+    const missing = this.db.prepare(
+      `SELECT id FROM calendars WHERE feed_token IS NULL`
+    ).all();
+    for (const row of missing) {
+      this.db.prepare(`UPDATE calendars SET feed_token=? WHERE id=?`)
+        .run(newFeedToken(), row.id);
+    }
   }
 
   createCalendar(name) {
     const id = randomUUID().slice(0, 8);
     const token = randomBytes(24).toString('base64url');
+    const feedToken = newFeedToken();
     this.db.prepare(
-      'INSERT INTO calendars (id, name, token, created_at) VALUES (?,?,?,?)'
-    ).run(id, name, token, new Date().toISOString());
-    return { id, name, token };
+      'INSERT INTO calendars (id, name, token, feed_token, created_at) VALUES (?,?,?,?,?)'
+    ).run(id, name, token, feedToken, new Date().toISOString());
+    return { id, name, token, feed_token: feedToken };
   }
 
   getCalendar(id) {
     return this.db.prepare('SELECT * FROM calendars WHERE id=?').get(id) ?? null;
   }
 
+  // Feed wird über das feed_token aufgelöst, NICHT über die interne id.
+  getCalendarByFeedToken(feedToken) {
+    if (!feedToken) return null;
+    return this.db.prepare('SELECT * FROM calendars WHERE feed_token=?').get(feedToken) ?? null;
+  }
+
   findCalendarByToken(token) {
+    if (!token) return null;
     return this.db.prepare('SELECT * FROM calendars WHERE token=?').get(token) ?? null;
   }
 
-  /**
-   * Event hinzufügen ODER aktualisieren (upsert per uid).
-   * Idempotenz: derselbe uid überschreibt — Client kann gefahrlos re-pushen.
-   */
+  // Feed-Token rotieren: neues Token, alte Abo-URL wird ungültig.
+  rotateFeedToken(id) {
+    const feedToken = newFeedToken();
+    const r = this.db.prepare('UPDATE calendars SET feed_token=? WHERE id=?').run(feedToken, id);
+    return r.changes > 0 ? feedToken : null;
+  }
+
+  // Feed-Passwort setzen (Basic Auth aktivieren) oder mit null löschen.
+  setFeedPassword(id, password) {
+    const r = this.db.prepare('UPDATE calendars SET feed_password=? WHERE id=?')
+      .run(password ?? null, id);
+    return r.changes > 0;
+  }
+
   addEvent(calendarId, { uid, summary, description, location, dtstart, dtend }) {
     const eventUid = uid || randomUUID();
     const existing = this.db.prepare(
