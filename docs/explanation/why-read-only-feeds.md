@@ -8,14 +8,14 @@ the data and who reads it.
 
 Each calendar has one source of truth: the system that pushes events with the calendar
 token. A script, a home server, or a bot owns the schedule and keeps it correct. Calendar
-apps only read the feed. Because a subscribed feed is read-only in every calendar app,
+apps only read the feed. Because every calendar app treats a subscribed feed as read-only,
 nobody can change an event on their phone and drift out of sync with the source.
 
 ## The feed always matches the source
 
 When the writer pushes an event, it uses a stable `uid`. Re-pushing the same `uid`
 updates the event in place instead of creating a duplicate, so the feed always reflects
-the latest state of the source. If the feed were editable, an app could hold a stale or
+the current state of the source. If the feed were editable, an app could hold a stale or
 conflicting copy, and you'd need to reconcile two versions of the same event. Read-only
 avoids that problem: the source pushes, and every subscriber converges on the same view.
 

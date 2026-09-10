@@ -12,8 +12,8 @@ folder. Make sure `curl` is available so you can talk to the server.
 
 ## Start the server
 
-calfeed reads an admin token from the environment. Pick a value you control and start the
-server on the default port `8787`:
+calfeed reads an administrator token from the environment. Pick a value you control and
+start the server on the default port `8787`:
 
 ```bash
 CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.mjs
@@ -27,8 +27,8 @@ For every environment variable calfeed reads, see
 
 ## Create a calendar
 
-Only you can create calendars, so this call needs the admin token. Ask the server for a
-new calendar named `Family`:
+Only you can create calendars, so this call needs the administrator token. Ask the server
+for a new calendar named `Family`:
 
 ```bash
 curl -X POST http://localhost:8787/calendars \
@@ -107,7 +107,8 @@ END:VEVENT
 END:VCALENDAR
 ```
 
-The ISO 8601 date you sent becomes iCalendar UTC (`20260910T170000Z`).
+The ISO 8601 date you sent becomes iCalendar Coordinated Universal Time (UTC), so
+`2026-09-10T17:00:00Z` appears as `20260910T170000Z`.
 
 ## Subscribe in a calendar app
 

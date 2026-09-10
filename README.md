@@ -9,7 +9,7 @@ through the built-in `node:sqlite` module.
 
 ## Quickstart
 
-Start the server with an admin token:
+Start the server with an administrator token:
 
 ```bash
 CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.mjs
@@ -18,7 +18,7 @@ CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.mjs
 Create a calendar, push an event, and read the feed:
 
 ```bash
-# Create a calendar (admin token)
+# Create a calendar (administrator token)
 curl -X POST http://localhost:8787/calendars \
   -H "Authorization: Bearer my-secret-admin-token" \
   -H "Content-Type: application/json" \

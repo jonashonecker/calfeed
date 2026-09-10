@@ -10,7 +10,7 @@ When you create a calendar, the response includes a `webcal_url`, such as
 subscription, so this is the value you need. To create a calendar, see
 [Create your first feed](/docs/tutorial/create-your-first-feed.md).
 
-If you only have the `subscribe_url` (an `http://` or `https://` link), swap its scheme
+If you only have the `subscribe_url`, an `http://` or `https://` link, swap its scheme
 for `webcal://`. The rest of the URL stays the same.
 
 ## Open the link on the device
@@ -40,5 +40,5 @@ and uses more battery.
 
 ## Related
 
-- Push events to the feed: [Push events from a script](/docs/how-to/push-events-from-a-script.md)
-- Why the feed is read-only: [Why read-only feeds](/docs/explanation/why-read-only-feeds.md)
+- To push events to the feed, read [Push events from a script](/docs/how-to/push-events-from-a-script.md).
+- To learn why the feed stays read-only, read [Why read-only feeds](/docs/explanation/why-read-only-feeds.md).

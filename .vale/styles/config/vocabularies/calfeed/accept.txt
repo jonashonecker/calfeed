@@ -14,3 +14,7 @@ VEVENT
 VCALENDAR
 subscribable
 unparseable
+ISO 8601
+RFC 5545
+iOS
+URL
