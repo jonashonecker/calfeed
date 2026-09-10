@@ -13,9 +13,24 @@
  *   Stufe 3: optionales feed_password → Feed verlangt HTTP Basic Auth.
  */
 import { createServer } from 'node:http';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, scryptSync } from 'node:crypto';
 import { SqliteStore } from './store.mjs';
 import { buildICal } from './ical.mjs';
+
+// Maximale Body-Größe beim Einlesen (Schutz vor Memory-DoS).
+const MAX_BODY_BYTES = 262144; // 256 KB
+
+// uid-Whitelist: nur alphanumerisch plus - _ . @ — verhindert CRLF-Injection
+// in die iCal-UID-Zeile.
+const UID_RE = /^[A-Za-z0-9._@-]+$/;
+
+// Fehler mit HTTP-Status, damit readJson-Fehler nicht im generischen 500 landen.
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.httpStatus = status;
+  }
+}
 
 function safeEqual(a, b) {
   const ab = Buffer.from(String(a));
@@ -24,15 +39,49 @@ function safeEqual(a, b) {
   return timingSafeEqual(ab, bb);
 }
 
+// Prüft ein Klartext-Passwort gegen einen gespeicherten "salt:hash" (base64, scrypt).
+function verifyFeedPassword(stored, candidate) {
+  if (typeof stored !== 'string' || !stored.includes(':')) return false;
+  const [saltB64, hashB64] = stored.split(':');
+  let salt, expected;
+  try {
+    salt = Buffer.from(saltB64, 'base64');
+    expected = Buffer.from(hashB64, 'base64');
+  } catch {
+    return false;
+  }
+  if (salt.length === 0 || expected.length === 0) return false;
+  const actual = scryptSync(String(candidate), salt, expected.length);
+  if (actual.length !== expected.length) return false;
+  return timingSafeEqual(actual, expected);
+}
+
 export function createApp(store = new SqliteStore()) {
   const ADMIN_TOKEN = process.env.CALFEED_ADMIN_TOKEN || 'dev-admin-token';
   const BASE_URL = process.env.CALFEED_BASE_URL || 'http://localhost:8787';
 
   async function readJson(req) {
     const chunks = [];
-    for await (const c of req) chunks.push(c);
+    let size = 0;
+    let tooLarge = false;
+    for await (const c of req) {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        // Über dem Limit: nichts mehr puffern, aber weiter lesen (verwerfen),
+        // damit die Verbindung sauber drainiert und der Client die 413 lesen kann.
+        tooLarge = true;
+        chunks.length = 0;
+        continue;
+      }
+      if (!tooLarge) chunks.push(c);
+    }
+    if (tooLarge) throw new HttpError(413, 'payload too large');
     if (!chunks.length) return {};
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    try {
+      return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    } catch {
+      throw new HttpError(400, 'invalid JSON');
+    }
   }
 
   function send(res, status, body, headers = {}) {
@@ -43,7 +92,9 @@ export function createApp(store = new SqliteStore()) {
 
   function bearer(req) {
     const h = req.headers.authorization || '';
-    return h.startsWith('Bearer ') ? h.slice(7) : null;
+    if (!h.startsWith('Bearer ')) return null;
+    const t = h.slice(7).trim();
+    return t.length ? t : null;
   }
 
   // HTTP Basic Auth aus dem Header lesen → {user, pass} oder null.
@@ -77,7 +128,7 @@ export function createApp(store = new SqliteStore()) {
         // Stufe 3: wenn feed_password gesetzt → Basic Auth verlangen
         if (cal.feed_password) {
           const creds = basicAuth(req);
-          if (!creds || !safeEqual(creds.pass, cal.feed_password)) {
+          if (!creds || !verifyFeedPassword(cal.feed_password, creds.pass)) {
             return send(res, 401, { error: 'authentication required' }, {
               'WWW-Authenticate': 'Basic realm="calfeed"',
             });
@@ -110,7 +161,7 @@ export function createApp(store = new SqliteStore()) {
       if (req.method === 'POST' && m) {
         const cal = store.findCalendarByToken(bearer(req));
         if (!cal || cal.id !== m[1]) return send(res, 401, { error: 'valid calendar token required' });
-        const newToken = store.rotateFeedToken(cal.id);
+        store.rotateFeedToken(cal.id);
         const updated = store.getCalendar(cal.id);
         return send(res, 200, { rotated: true, ...subscribeUrls(updated) });
       }
@@ -135,6 +186,18 @@ export function createApp(store = new SqliteStore()) {
         if (!body.summary || !body.dtstart) {
           return send(res, 400, { error: 'summary and dtstart required' });
         }
+        // uid (falls angegeben) muss der Whitelist entsprechen → keine iCal-Injection.
+        if (body.uid != null && !UID_RE.test(String(body.uid))) {
+          return send(res, 400, { error: 'invalid uid' });
+        }
+        // Datumsfelder serverseitig validieren, damit kein kaputtes Datum in die DB
+        // gelangt und später den ganzen Feed vergiftet.
+        if (isNaN(new Date(body.dtstart).getTime())) {
+          return send(res, 400, { error: 'invalid dtstart' });
+        }
+        if (body.dtend != null && isNaN(new Date(body.dtend).getTime())) {
+          return send(res, 400, { error: 'invalid dtend' });
+        }
         const result = store.addEvent(cal.id, body);
         return send(res, result.updated ? 200 : 201, result);
       }
@@ -150,7 +213,13 @@ export function createApp(store = new SqliteStore()) {
 
       return send(res, 404, { error: 'not found' });
     } catch (err) {
-      return send(res, 500, { error: String(err.message || err) });
+      // Bekannte Client-Fehler (Body zu groß, kaputtes JSON) sauber melden.
+      if (err instanceof HttpError) {
+        return send(res, err.httpStatus, { error: err.message });
+      }
+      // Unerwartete Fehler: serverseitig loggen, dem Client nur generisch melden.
+      console.error('calfeed internal error:', err);
+      return send(res, 500, { error: 'internal server error' });
     }
   });
 
@@ -158,6 +227,15 @@ export function createApp(store = new SqliteStore()) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  // Fail-fast: kein stiller funktionierender Default-Admin-Token im echten Start.
+  const t = process.env.CALFEED_ADMIN_TOKEN;
+  if (!t || t === 'dev-admin-token' || t === 'change-me') {
+    console.error(
+      'FATAL: CALFEED_ADMIN_TOKEN must be set to a non-default value. ' +
+      'Refusing to start with a missing or well-known token.'
+    );
+    process.exit(1);
+  }
   const port = process.env.PORT || 8787;
   createApp().listen(port, () => console.log(`calfeed listening on :${port}`));
 }

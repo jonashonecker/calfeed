@@ -60,12 +60,19 @@ Request body:
 | `summary` | string | Yes | Event title. |
 | `dtstart` | string | Yes | Start time in ISO 8601, such as `2026-09-10T17:00:00Z`. |
 | `dtend` | string | No | End time in ISO 8601. |
-| `uid` | string | No | Stable identifier. calfeed generates one if you omit it. |
+| `uid` | string | No | Stable identifier. calfeed generates one if you omit it. Allowed characters are letters, digits, and `-` `_` `.` `@`. |
 | `description` | string | No | Longer text for the event. |
 | `location` | string | No | Where the event happens. |
 
 Returns `201` with `{ "id", "uid", "updated": false }` for a new event, or `200` with
 `{ "updated": true }` when you update an existing `uid`.
+
+calfeed validates the request before it stores anything. A `dtstart` or `dtend` date that
+calfeed fails to parse returns `400` with `{ "error": "invalid dtstart" }` or
+`{ "error": "invalid dtend" }`. A `uid` value with any other character returns `400` with
+`{ "error": "invalid uid" }`. A request body larger than 256&nbsp;KB returns `413` with
+`{ "error": "payload too large" }`, and a body that fails to parse as JSON returns
+`400` with `{ "error": "invalid JSON" }`.
 
 ### Delete an event
 
@@ -137,13 +144,14 @@ the form `webcal://user:password@host/cal/:feed_token.ics`.
 |---|---|
 | `200` | Success: event updated, event deleted, feed returned, token rotated, or password changed. |
 | `201` | The server created a calendar or a new event. |
-| `400` | A required field is missing: `name`, or `summary` and `dtstart`. |
+| `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a date or `uid` is invalid, or the body holds malformed JSON. |
 | `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong. |
 | `404` | Unknown feed token, unknown calendar, unknown event on delete, or unknown route. |
+| `413` | The request body is larger than the 256&nbsp;KB limit. |
 | `500` | The server hit an unexpected error. |
 
 ## Dates
 
 Send dates in ISO 8601. calfeed converts them to iCalendar Coordinated Universal Time (UTC)
-in the feed, so `2026-09-10T17:00:00Z` becomes `20260910T170000Z`. An unparseable
-date produces a `500`.
+in the feed, so `2026-09-10T17:00:00Z` becomes `20260910T170000Z`. calfeed rejects an
+unparseable date at write time with a `400`, so a bad date never reaches the feed.

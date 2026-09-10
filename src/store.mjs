@@ -8,7 +8,7 @@
  *  - feed_password: optional. Wenn gesetzt, verlangt der Feed HTTP Basic Auth.
  */
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomUUID, randomBytes, scryptSync } from 'node:crypto';
 
 const newFeedToken = () => randomBytes(32).toString('base64url');
 
@@ -94,9 +94,16 @@ export class SqliteStore {
   }
 
   // Feed-Passwort setzen (Basic Auth aktivieren) oder mit null löschen.
+  // Gespeichert wird nie Klartext, sondern "salt:hash" (beides base64, scrypt).
   setFeedPassword(id, password) {
+    let stored = null;
+    if (password != null && String(password).length > 0) {
+      const salt = randomBytes(16);
+      const hash = scryptSync(String(password), salt, 64);
+      stored = `${salt.toString('base64')}:${hash.toString('base64')}`;
+    }
     const r = this.db.prepare('UPDATE calendars SET feed_password=? WHERE id=?')
-      .run(password ?? null, id);
+      .run(stored, id);
     return r.changes > 0;
   }
 

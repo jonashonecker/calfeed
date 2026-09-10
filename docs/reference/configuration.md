@@ -1,21 +1,22 @@
 # Configuration
 
-calfeed reads its configuration from environment variables at startup. None are strictly
-required to start, but you should set the administrator token in any real deployment.
+calfeed reads its configuration from environment variables at startup. You must set the
+administrator token to a non-default value before the server starts.
 
 ## Environment variables
 
 | Variable | Description | Default |
 |---|---|---|
-| `CALFEED_ADMIN_TOKEN` | Bearer token that authorizes creating calendars. | `dev-admin-token` |
+| `CALFEED_ADMIN_TOKEN` | Bearer token that authorizes creating calendars. Required: the server refuses to start without it. | none |
 | `CALFEED_BASE_URL` | Base URL calfeed uses to build `subscribe_url` and `webcal_url`. | `http://localhost:8787` |
 | `PORT` | Port the server listens on. | `8787` |
 
 ## The administrator token
 
-The `CALFEED_ADMIN_TOKEN` value guards `POST /calendars`. The default `dev-admin-token` is
-only for local development. Set your own value before exposing the server, so nobody else
-can create calendars:
+The `CALFEED_ADMIN_TOKEN` value guards `POST /calendars`. The server refuses to start when
+the token is unset or left at a well-known value such as `dev-admin-token` or `change-me`.
+In that case it prints an error and exits. Set your own value before starting, so nobody
+else can create calendars:
 
 ```bash
 CALFEED_ADMIN_TOKEN=a-long-random-string node src/server.mjs

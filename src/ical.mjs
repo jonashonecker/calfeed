@@ -12,7 +12,7 @@ function escapeText(s) {
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
-    .replace(/\r?\n/g, '\\n');
+    .replace(/\r\n|\r|\n/g, '\\n');
 }
 
 // RFC 5545: Zeilen dürfen max 75 Oktette lang sein, dann "folding" mit CRLF + Space.
