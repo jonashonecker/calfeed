@@ -34,8 +34,10 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-# Run every .hurl file in order.
+# Run every .hurl file: contract tests first, then scenarios.
+# --file-root lets tests in subfolders reference fixtures/ by one path.
 hurl --test \
+  --file-root "$HERE" \
   --variable "base=$BASE" \
   --variable "admin_token=$ADMIN_TOKEN" \
-  "$HERE"/*.hurl
+  "$HERE"/contract/*.hurl "$HERE"/scenarios/*.hurl

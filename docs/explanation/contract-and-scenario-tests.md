@@ -15,15 +15,15 @@ A contract test answers the question: does this endpoint keep its promise? For
 what happens with hostile input, and what does the response look like? These are many
 small, independent checks that need no story, only a calendar as setup.
 
-The payoff is auditability. `02-events.hurl` contains everything the suite asserts
-about `/events`, so you can hold the file next to the
+The payoff is auditability. `contract/events.hurl` contains everything the suite
+asserts about `/events`, so you can hold the file next to the
 [API reference](/docs/reference/api.md) and check them against each other line by
 line: every documented status code should appear as an assertion. When an endpoint
 gains a feature, its contract file is the one place to extend.
 
-- `01-calendars.hurl` covers `POST /calendars`.
-- `02-events.hurl` covers `POST /events` and `DELETE /events/:uid`.
-- `03-feed.hurl` covers `GET /cal/:feed_token.ics`, and closes with the full
+- `contract/calendars.hurl` covers `POST /calendars`.
+- `contract/events.hurl` covers `POST /events` and `DELETE /events/:uid`.
+- `contract/feed.hurl` covers `GET /cal/:feed_token.ics`, and closes with the full
   round trip: create, push, read, delete, empty feed.
 
 ## Scenario tests: one file per property
@@ -34,11 +34,11 @@ dies, and a password survives the rotation" is a lifecycle. These tests must tel
 story, which is exactly what a Hurl file with captures does well. Splitting such a
 story across endpoint files would tear it apart and rebuild the setup several times.
 
-- `04-feed-privacy.hurl` walks the privacy lifecycle: rotation, password challenge,
-  rotation under password, removal.
-- `05-isolation.hurl` plays two tenants against each other.
-- `06-ical-format.hurl` checks the quality of the iCal output: escaping, folding,
-  UTF-8, ordering, `DTEND`.
+- `scenarios/feed-privacy.hurl` walks the privacy lifecycle: rotation, password
+  challenge, rotation under password, removal.
+- `scenarios/isolation.hurl` plays two tenants against each other.
+- `scenarios/ical-format.hurl` checks the quality of the iCal output: escaping,
+  folding, UTF-8, ordering, `DTEND`.
 
 ## Where a new test belongs
 

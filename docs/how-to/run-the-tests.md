@@ -32,27 +32,29 @@ CALFEED_BASE_URL=http://localhost:8799 \
 PORT=8799 node src/server.js
 ```
 
-Then point Hurl at the file, passing the two variables every test expects:
+Then point Hurl at the file, passing the two variables every test expects.
+`--file-root test` lets tests in the subdirectories find `test/fixtures/`:
 
 ```bash
 hurl --test \
+  --file-root test \
   --variable base=http://localhost:8799 \
   --variable admin_token=dev-token-1234 \
-  test/02-events.hurl
+  test/contract/events.hurl
 ```
 
 ## What the suite covers
 
-Files 01 to 03 are contract tests, one per endpoint. Files 04 to 06 are scenario
-tests, one per cross-cutting property. For the reasoning behind that split, see
+`test/contract/` holds one contract test per endpoint, `test/scenarios/` one scenario
+test per cross-cutting property. For the reasoning behind that split, see
 [Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md).
 
-- `01-calendars.hurl`: the `POST /calendars` contract.
-- `02-events.hurl`: the `POST /events` and `DELETE /events/:uid` contracts.
-- `03-feed.hurl`: the `GET /cal/:feed_token.ics` contract and the full round trip.
-- `04-feed-privacy.hurl`: rotation and password lifecycle.
-- `05-isolation.hurl`: cross-tenant isolation between calendars.
-- `06-ical-format.hurl`: iCal escaping, line folding, UTF-8, ordering, and `DTEND`.
+- `contract/calendars.hurl`: the `POST /calendars` contract.
+- `contract/events.hurl`: the `POST /events` and `DELETE /events/:uid` contracts.
+- `contract/feed.hurl`: the `GET /cal/:feed_token.ics` contract and the full round trip.
+- `scenarios/feed-privacy.hurl`: rotation and password lifecycle.
+- `scenarios/isolation.hurl`: cross-tenant isolation between calendars.
+- `scenarios/ical-format.hurl`: iCal escaping, line folding, UTF-8, ordering, and `DTEND`.
 
 ## Continuous integration
 
