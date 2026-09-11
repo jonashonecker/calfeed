@@ -32,3 +32,4 @@
 - [Why read-only feeds](/docs/explanation/why-read-only-feeds.md)
 - [A token per calendar](/docs/explanation/token-per-calendar.md)
 - [Feed privacy](/docs/explanation/feed-privacy.md)
+- [Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md)

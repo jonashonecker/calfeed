@@ -38,16 +38,21 @@ Then point Hurl at the file, passing the two variables every test expects:
 hurl --test \
   --variable base=http://localhost:8799 \
   --variable admin_token=dev-token-1234 \
-  test/03-hardening.hurl
+  test/02-events.hurl
 ```
 
 ## What the suite covers
 
-- `01-core-flow.hurl`: calendar creation, event push, and feed retrieval.
-- `02-privacy.hurl`: feed token rotation and Basic authentication.
-- `03-hardening.hurl`: input validation and injection defense.
-- `04-isolation.hurl`: cross-tenant isolation between calendars.
-- `05-ical.hurl`: iCal escaping, line folding, UTF-8, and optional `dtend`.
+Files 01 to 03 are contract tests, one per endpoint. Files 04 to 06 are scenario
+tests, one per cross-cutting property. For the reasoning behind that split, see
+[Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md).
+
+- `01-calendars.hurl`: the `POST /calendars` contract.
+- `02-events.hurl`: the `POST /events` and `DELETE /events/:uid` contracts.
+- `03-feed.hurl`: the `GET /cal/:feed_token.ics` contract and the full round trip.
+- `04-feed-privacy.hurl`: rotation and password lifecycle.
+- `05-isolation.hurl`: cross-tenant isolation between calendars.
+- `06-ical-format.hurl`: iCal escaping, line folding, UTF-8, ordering, and `DTEND`.
 
 ## Continuous integration
 
@@ -57,3 +62,5 @@ push and pull request, plus a Docker build with a container smoke test.
 ## Related
 
 - To see the endpoints the tests exercise, see [API reference](/docs/reference/api.md).
+- To understand the split between contract and scenario files, see
+  [Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md).
