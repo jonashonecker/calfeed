@@ -3,7 +3,7 @@
 # Starts calfeed, waits until it answers, runs the .hurl contract tests, cleans up.
 #
 # Usage: ./test/run.sh
-# Requires: hurl (https://hurl.dev), node 22+.
+# Requires: hurl (https://hurl.dev), node 22.13+.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

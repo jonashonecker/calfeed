@@ -1,6 +1,6 @@
 /**
  * Storage layer, abstracted so a switch to another backend stays small.
- * Uses node:sqlite (built into Node 22+).
+ * Uses node:sqlite (built into Node 22.13+).
  *
  * Privacy model for feeds:
  *  - feed_token: long random token, part of the subscribe URL (/cal/:feed_token.ics).

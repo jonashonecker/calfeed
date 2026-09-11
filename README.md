@@ -6,8 +6,8 @@ Serve subscribable, read-only calendar feeds. Clients push events over a small H
 and you subscribe to the resulting `.ics` feed in any calendar app, including the iOS
 Calendar widget.
 
-calfeed is a zero-dependency Node backend. It runs on Node 26 and stores data in SQLite
-through the built-in `node:sqlite` module.
+calfeed is a zero-dependency Node backend. It needs Node 22.13 or later and stores data
+in SQLite through the built-in `node:sqlite` module.
 
 Each feed lives at a long, unguessable feed token that you can rotate if a URL leaks, and
 you can protect a feed with a password through HTTP Basic authentication. See
