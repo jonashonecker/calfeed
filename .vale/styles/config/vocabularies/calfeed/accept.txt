@@ -25,7 +25,6 @@ upsert
 webcal
 API
 Bearer
-Fly.io
 iOS
 JSON
 URL
