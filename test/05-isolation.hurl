@@ -1,4 +1,4 @@
-# Blackbox contract test: cross-tenant isolation (GAP A).
+# Scenario test: cross-tenant isolation.
 # Two calendars A and B, each with its own token. B must not be able to touch
 # A's events, feed token, or feed password. Same uid in both calendars is fine.
 # Variables: base, admin_token

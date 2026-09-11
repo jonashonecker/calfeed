@@ -1,4 +1,6 @@
-# Blackbox contract test: feed privacy — token rotation and Basic authentication.
+# Scenario test: the feed privacy lifecycle. Rotation kills old URLs (the
+# feed rotates twice across this file), a password challenges via Basic
+# authentication, survives rotation, and null or "" removes it.
 # Variables: base, admin_token
 
 # ── Set up a calendar to protect ──────────────────────────────────

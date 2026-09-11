@@ -1,4 +1,5 @@
-# Blackbox contract test: iCal escaping, folding, UTF-8, and optional dtend (GAP B).
+# Scenario test: iCal output quality — escaping, line folding, UTF-8,
+# event ordering, and DTEND handling.
 # Variables: base, admin_token
 
 # ── Create a calendar; its name needs escaping in the feed ───────
