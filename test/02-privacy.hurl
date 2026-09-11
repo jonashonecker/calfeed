@@ -77,6 +77,29 @@ HTTP 200
 [Asserts]
 body contains "BEGIN:VCALENDAR"
 
+# ── Rotating a protected feed keeps the password requirement ─────
+POST {{base}}/calendars/{{cal_id}}/rotate-feed
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Captures]
+rotated_feed: jsonpath "$.subscribe_url"
+
+# ── The pre-rotation URL is dead ──────────────────────────────────
+GET {{new_feed}}
+HTTP 404
+
+# ── The rotated URL still challenges without credentials ─────────
+GET {{rotated_feed}}
+HTTP 401
+[Asserts]
+header "WWW-Authenticate" contains "Basic"
+
+# ── The rotated URL still accepts the password ────────────────────
+GET {{rotated_feed}}
+[BasicAuth]
+user: s3cret
+HTTP 200
+
 # ── Removing the password makes the feed open again ───────────────
 PUT {{base}}/calendars/{{cal_id}}/feed-password
 Authorization: Bearer {{cal_token}}
@@ -87,5 +110,27 @@ HTTP 200
 [Asserts]
 jsonpath "$.protected" == false
 
-GET {{new_feed}}
+GET {{rotated_feed}}
+HTTP 200
+
+# ── An empty password also removes protection ────────────────────
+PUT {{base}}/calendars/{{cal_id}}/feed-password
+Authorization: Bearer {{cal_token}}
+{
+  "password": "temporary"
+}
+HTTP 200
+[Asserts]
+jsonpath "$.protected" == true
+
+PUT {{base}}/calendars/{{cal_id}}/feed-password
+Authorization: Bearer {{cal_token}}
+{
+  "password": ""
+}
+HTTP 200
+[Asserts]
+jsonpath "$.protected" == false
+
+GET {{rotated_feed}}
 HTTP 200

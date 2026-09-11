@@ -85,6 +85,7 @@ GET {{feed_url}}
 HTTP 200
 [Asserts]
 header "Content-Type" contains "text/calendar"
+header "Cache-Control" contains "max-age"
 body contains "BEGIN:VCALENDAR"
 body contains "VERSION:2.0"
 body contains "END:VCALENDAR"
@@ -105,6 +106,27 @@ DELETE {{base}}/events/does-not-exist
 Authorization: Bearer {{cal_token}}
 HTTP 404
 
+# ── Pushing without a uid lets the server generate one ───────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "No uid supplied",
+  "dtstart": "2026-09-11T12:00:00Z"
+}
+HTTP 201
+[Asserts]
+jsonpath "$.uid" matches /^[A-Za-z0-9-]{8,}$/
+jsonpath "$.updated" == false
+[Captures]
+generated_uid: jsonpath "$.uid"
+
+# ── The generated uid works for deletion ─────────────────────────
+DELETE {{base}}/events/{{generated_uid}}
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.deleted" == true
+
 # ── After deletion the feed has no events ─────────────────────────
 GET {{feed_url}}
 HTTP 200
@@ -113,4 +135,8 @@ body not contains "BEGIN:VEVENT"
 
 # ── An unknown feed token is not found ────────────────────────────
 GET {{base}}/cal/nonexistenttokenthatislongenough1234567890.ics
+HTTP 404
+
+# ── The short calendar id does not work as a feed token ──────────
+GET {{base}}/cal/{{cal_id}}.ics
 HTTP 404
