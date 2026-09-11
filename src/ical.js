@@ -1,9 +1,9 @@
 /**
- * iCalendar (RFC 5545) Generator. Bewusst minimal, aber standardkonform:
- * - CRLF Zeilenenden (Pflicht)
- * - Line-Folding bei >75 Oktetten
- * - Escaping von , ; \ und Newlines in TEXT-Werten
- * - VTIMEZONE weggelassen: wir nutzen UTC (Z-Suffix), das ist eindeutig und iOS-kompatibel
+ * iCalendar (RFC 5545) generator. Deliberately minimal but standards-conformant:
+ * - CRLF line endings (mandatory)
+ * - line folding at >75 octets
+ * - escaping of , ; \ and newlines in TEXT values
+ * - VTIMEZONE omitted: UTC (Z suffix) is unambiguous and iOS-compatible
  */
 
 function escapeText(s) {
@@ -15,17 +15,17 @@ function escapeText(s) {
     .replace(/\r\n|\r|\n/g, '\\n');
 }
 
-// RFC 5545: Zeilen dürfen max 75 Oktette lang sein, dann "folding" mit CRLF + Space.
+// RFC 5545 caps lines at 75 octets; longer lines "fold" with CRLF + space.
 function foldLine(line) {
   const bytes = Buffer.from(line, 'utf8');
   if (bytes.length <= 75) return line;
   const parts = [];
   let start = 0;
-  // erste Zeile 75, Folgezeilen 74 (führendes Space zählt)
+  // first line 75 octets, continuation lines 74 (the leading space counts)
   let limit = 75;
   while (start < bytes.length) {
     let end = Math.min(start + limit, bytes.length);
-    // nicht mitten in ein Multibyte-Zeichen schneiden
+    // never cut inside a multibyte character
     while (end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
     parts.push(bytes.subarray(start, end).toString('utf8'));
     start = end;
@@ -34,7 +34,7 @@ function foldLine(line) {
   return parts.join('\r\n ');
 }
 
-// Datum → iCal UTC-Format: 20260910T170000Z
+// Date → iCal UTC format: 20260910T170000Z
 function toICalDate(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) throw new Error(`invalid date: ${iso}`);

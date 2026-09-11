@@ -1,22 +1,23 @@
 /**
- * Storage-Layer — abstrahiert, damit der Wechsel zu anderen Backends klein bleibt.
- * Nutzt node:sqlite (in Node 22+ eingebaut).
+ * Storage layer, abstracted so a switch to another backend stays small.
+ * Uses node:sqlite (built into Node 22+).
  *
- * Privacy-Modell für Feeds:
- *  - feed_token: langes Zufallstoken, steht in der Abo-URL (/cal/:feed_token.ics).
- *    Nicht erratbar, rotierbar (bei Leak neues Token → alte URL tot).
- *  - feed_password: optional. Wenn gesetzt, verlangt der Feed HTTP Basic Auth.
+ * Privacy model for feeds:
+ *  - feed_token: long random token, part of the subscribe URL (/cal/:feed_token.ics).
+ *    Not guessable, rotatable (after a leak, a new token kills the old URL).
+ *  - feed_password: optional. When set, the feed requires HTTP Basic Auth.
  */
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, randomBytes, scryptSync, createHash } from 'node:crypto';
 
 const newFeedToken = () => randomBytes(32).toString('base64url');
 
-// Token werden NICHT im Klartext gespeichert, sondern als SHA-256-Hash.
-// Grund: (a) schützt gegen Timing-Seitenkanal beim Lookup (fixe Hash-Länge,
-// Vergleich über SQL-Index) und (b) ein geleaktes .db-File enthält nur wertlose
-// Hashes. SHA-256 (schnell) ist bewusst gewählt: Token haben volle Zufalls-
-// entropie (randomBytes), daher ist kein scrypt-Brute-Force-Schutz nötig.
+// The store never keeps plaintext tokens, only their SHA-256 hash. Two
+// reasons: (a) it protects against a timing side channel during lookup
+// (fixed hash length, comparison through the SQL index) and (b) a leaked
+// .db file contains only worthless hashes. SHA-256 (fast) is a deliberate
+// choice: tokens carry full random entropy (randomBytes), so scrypt-style
+// brute-force protection is unnecessary.
 const hashToken = (t) => createHash('sha256').update(String(t)).digest('hex');
 
 export class SqliteStore {
@@ -46,12 +47,13 @@ export class SqliteStore {
       CREATE INDEX IF NOT EXISTS idx_events_cal ON events(calendar_id);
     `);
     this._migrate();
-    // Index auf feed_token_hash ERST nach der Migration (Spalte existiert dann sicher).
+    // Create the index on feed_token_hash only after the migration, when the
+    // column certainly exists.
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_cal_feedtoken ON calendars(feed_token_hash);`);
   }
 
-  // Migration: neue Kalender-DB nutzt token_hash/feed_token_hash. Fehlende
-  // Spalten werden ergänzt; Kalender ohne feed_token_hash bekommen einen.
+  // Migration: a fresh database uses token_hash/feed_token_hash. Missing
+  // columns get added; calendars without a feed_token_hash get one.
   _migrate() {
     const cols = this.db.prepare(`PRAGMA table_info(calendars)`).all().map(c => c.name);
     if (!cols.includes('feed_token_hash')) {
@@ -73,7 +75,7 @@ export class SqliteStore {
     const id = randomUUID().slice(0, 8);
     const token = randomBytes(24).toString('base64url');
     const feedToken = newFeedToken();
-    // Gespeichert wird jeweils nur der Hash; Klartext-Werte gehen an den Client.
+    // The row holds only the hashes; the plaintext values go to the client.
     this.db.prepare(
       'INSERT INTO calendars (id, name, token_hash, feed_token_hash, created_at) VALUES (?,?,?,?,?)'
     ).run(id, name, hashToken(token), hashToken(feedToken), new Date().toISOString());
@@ -84,8 +86,8 @@ export class SqliteStore {
     return this.db.prepare('SELECT * FROM calendars WHERE id=?').get(id) ?? null;
   }
 
-  // Feed wird über das feed_token aufgelöst, NICHT über die interne id.
-  // Das eingehende Klartext-Token wird gehasht und gegen feed_token_hash gesucht.
+  // The feed resolves through the feed_token, not the internal id. Hash the
+  // incoming plaintext token and look it up against feed_token_hash.
   getCalendarByFeedToken(feedToken) {
     if (!feedToken) return null;
     return this.db.prepare('SELECT * FROM calendars WHERE feed_token_hash=?')
@@ -98,8 +100,8 @@ export class SqliteStore {
       .get(hashToken(token)) ?? null;
   }
 
-  // Feed-Token rotieren: neues Klartext-Token, gespeichert wird der Hash,
-  // zurückgegeben wird das KLARTEXT-Token (server.mjs baut daraus die Abo-URL).
+  // Rotate the feed token: generates a new plaintext token, stores its hash,
+  // and returns the PLAINTEXT token (server.js builds the subscribe URL from it).
   rotateFeedToken(id) {
     const feedToken = newFeedToken();
     const r = this.db.prepare('UPDATE calendars SET feed_token_hash=? WHERE id=?')
@@ -107,8 +109,8 @@ export class SqliteStore {
     return r.changes > 0 ? feedToken : null;
   }
 
-  // Feed-Passwort setzen (Basic Auth aktivieren) oder mit null löschen.
-  // Gespeichert wird nie Klartext, sondern "salt:hash" (beides base64, scrypt).
+  // Set the feed password (turn on Basic Auth) or clear it with null.
+  // Never stores plaintext, only "salt:hash" (both base64, scrypt).
   setFeedPassword(id, password) {
     let stored = null;
     if (password != null && String(password).length > 0) {

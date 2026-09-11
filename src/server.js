@@ -1,30 +1,30 @@
 /**
- * calfeed HTTP-Server — der Kern.
- * Endpunkte:
- *   POST   /calendars                  {name}          → Kalender anlegen (Admin-Token)
- *   POST   /events                     {summary, ...}  → Event upsert (Kalender-Token)
- *   DELETE /events/:uid                                → Event löschen (Kalender-Token)
- *   POST   /calendars/:id/rotate-feed                  → Feed-Token neu (Kalender-Token)
- *   PUT    /calendars/:id/feed-password {password|null}→ Basic Auth setzen/löschen (Kalender-Token)
- *   GET    /cal/:feed_token.ics                        → Feed (öffentlich ODER Basic Auth)
+ * The calfeed HTTP server.
+ * Endpoints:
+ *   POST   /calendars                  {name}          → create a calendar (administrator token)
+ *   POST   /events                     {event fields}  → upsert an event (calendar token)
+ *   DELETE /events/:uid                                → delete an event (calendar token)
+ *   POST   /calendars/:id/rotate-feed                  → new feed token (calendar token)
+ *   PUT    /calendars/:id/feed-password {password|null}→ set or clear Basic Auth (calendar token)
+ *   GET    /cal/:feed_token.ics                        → the feed (public OR Basic Auth)
  *
- * Feed-Privatsphäre:
- *   Stufe 2: langes feed_token in der URL, rotierbar.
- *   Stufe 3: optionales feed_password → Feed verlangt HTTP Basic Auth.
+ * Feed privacy:
+ *   Level 2: long feed_token in the URL, rotatable.
+ *   Level 3: optional feed_password → the feed requires HTTP Basic Auth.
  */
 import { createServer } from 'node:http';
 import { timingSafeEqual, scryptSync } from 'node:crypto';
-import { SqliteStore } from './store.mjs';
-import { buildICal } from './ical.mjs';
+import { SqliteStore } from './store.js';
+import { buildICal } from './ical.js';
 
-// Maximale Body-Größe beim Einlesen (Schutz vor Memory-DoS).
+// Maximum request body size (guards against memory exhaustion).
 const MAX_BODY_BYTES = 262144; // 256 KB
 
-// uid-Whitelist: nur alphanumerisch plus - _ . @ — verhindert CRLF-Injection
-// in die iCal-UID-Zeile.
+// The uid allowlist (alphanumeric plus - _ . @) prevents CRLF injection
+// into the iCal UID line.
 const UID_RE = /^[A-Za-z0-9._@-]+$/;
 
-// Fehler mit HTTP-Status, damit readJson-Fehler nicht im generischen 500 landen.
+// Error with an HTTP status, so readJson failures don't end up as a generic 500.
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -39,7 +39,7 @@ function safeEqual(a, b) {
   return timingSafeEqual(ab, bb);
 }
 
-// Prüft ein Klartext-Passwort gegen einen gespeicherten "salt:hash" (base64, scrypt).
+// Checks a plaintext password against a stored "salt:hash" (base64, scrypt).
 function verifyFeedPassword(stored, candidate) {
   if (typeof stored !== 'string' || !stored.includes(':')) return false;
   const [saltB64, hashB64] = stored.split(':');
@@ -67,8 +67,8 @@ export function createApp(store = new SqliteStore()) {
     for await (const c of req) {
       size += c.length;
       if (size > MAX_BODY_BYTES) {
-        // Über dem Limit: nichts mehr puffern, aber weiter lesen (verwerfen),
-        // damit die Verbindung sauber drainiert und der Client die 413 lesen kann.
+        // Over the limit: stop buffering but keep reading (and discarding) so
+        // the connection drains cleanly and the client can read the 413.
         tooLarge = true;
         chunks.length = 0;
         continue;
@@ -97,7 +97,7 @@ export function createApp(store = new SqliteStore()) {
     return t.length ? t : null;
   }
 
-  // HTTP Basic Auth aus dem Header lesen → {user, pass} oder null.
+  // Read HTTP Basic Auth from the header → {user, pass} or null.
   function basicAuth(req) {
     const h = req.headers.authorization || '';
     if (!h.startsWith('Basic ')) return null;
@@ -107,8 +107,8 @@ export function createApp(store = new SqliteStore()) {
     return { user: decoded.slice(0, i), pass: decoded.slice(i + 1) };
   }
 
-  // Baut die Abo-URLs aus dem KLARTEXT-feed_token. Die DB kennt nur den Hash,
-  // daher muss das Klartext-Token vom Aufrufer (create/rotate) übergeben werden.
+  // Builds the subscribe URLs from the PLAINTEXT feed_token. The database only
+  // holds the hash, so the caller (create/rotate) must pass the plaintext token.
   function subscribeUrls(feedToken) {
     return {
       subscribe_url: `${BASE_URL}/cal/${feedToken}.ics`,
@@ -121,13 +121,13 @@ export function createApp(store = new SqliteStore()) {
       const url = new URL(req.url, BASE_URL);
       const path = url.pathname;
 
-      // GET /cal/:feed_token.ics — öffentlicher/geschützter Feed
+      // GET /cal/:feed_token.ics: public or protected feed
       if (req.method === 'GET' && path.startsWith('/cal/') && path.endsWith('.ics')) {
         const feedToken = path.slice('/cal/'.length, -'.ics'.length);
         const cal = store.getCalendarByFeedToken(feedToken);
         if (!cal) return send(res, 404, { error: 'calendar not found' });
 
-        // Stufe 3: wenn feed_password gesetzt → Basic Auth verlangen
+        // Level 3: calendars with a feed_password require Basic Auth
         if (cal.feed_password) {
           const creds = basicAuth(req);
           if (!creds || !verifyFeedPassword(cal.feed_password, creds.pass)) {
@@ -145,7 +145,7 @@ export function createApp(store = new SqliteStore()) {
         });
       }
 
-      // POST /calendars — Admin legt Kalender an
+      // POST /calendars: the administrator creates a calendar
       if (req.method === 'POST' && path === '/calendars') {
         if (!safeEqual(bearer(req) ?? '', ADMIN_TOKEN)) {
           return send(res, 401, { error: 'admin token required' });
@@ -158,7 +158,7 @@ export function createApp(store = new SqliteStore()) {
         });
       }
 
-      // POST /calendars/:id/rotate-feed — Feed-Token neu (Kalender-Token)
+      // POST /calendars/:id/rotate-feed: new feed token (calendar token)
       let m = path.match(/^\/calendars\/([^/]+)\/rotate-feed$/);
       if (req.method === 'POST' && m) {
         const cal = store.findCalendarByToken(bearer(req));
@@ -167,19 +167,19 @@ export function createApp(store = new SqliteStore()) {
         return send(res, 200, { rotated: true, ...subscribeUrls(newFeedToken) });
       }
 
-      // PUT /calendars/:id/feed-password — Basic Auth setzen/löschen (Kalender-Token)
+      // PUT /calendars/:id/feed-password: set or clear Basic Auth (calendar token)
       m = path.match(/^\/calendars\/([^/]+)\/feed-password$/);
       if (req.method === 'PUT' && m) {
         const cal = store.findCalendarByToken(bearer(req));
         if (!cal || cal.id !== m[1]) return send(res, 401, { error: 'valid calendar token required' });
         const body = await readJson(req);
-        // password: string → aktivieren; null/leer → deaktivieren
+        // password: string → protect the feed; null or empty → remove protection
         const pw = body.password ? String(body.password) : null;
         store.setFeedPassword(cal.id, pw);
         return send(res, 200, { protected: pw !== null });
       }
 
-      // POST /events — Client pusht ein Event (Kalender-Token)
+      // POST /events: a client pushes an event (calendar token)
       if (req.method === 'POST' && path === '/events') {
         const cal = store.findCalendarByToken(bearer(req));
         if (!cal) return send(res, 401, { error: 'valid calendar token required' });
@@ -187,12 +187,12 @@ export function createApp(store = new SqliteStore()) {
         if (!body.summary || !body.dtstart) {
           return send(res, 400, { error: 'summary and dtstart required' });
         }
-        // uid (falls angegeben) muss der Whitelist entsprechen → keine iCal-Injection.
+        // uid (when given) must match the allowlist → no iCal injection.
         if (body.uid != null && !UID_RE.test(String(body.uid))) {
           return send(res, 400, { error: 'invalid uid' });
         }
-        // Datumsfelder serverseitig validieren, damit kein kaputtes Datum in die DB
-        // gelangt und später den ganzen Feed vergiftet.
+        // Validate date fields server-side so a broken date never reaches the
+        // database and poisons the whole feed later.
         if (isNaN(new Date(body.dtstart).getTime())) {
           return send(res, 400, { error: 'invalid dtstart' });
         }
@@ -203,7 +203,7 @@ export function createApp(store = new SqliteStore()) {
         return send(res, result.updated ? 200 : 201, result);
       }
 
-      // DELETE /events/:uid — Client löscht ein Event
+      // DELETE /events/:uid: a client deletes an event
       if (req.method === 'DELETE' && path.startsWith('/events/')) {
         const cal = store.findCalendarByToken(bearer(req));
         if (!cal) return send(res, 401, { error: 'valid calendar token required' });
@@ -214,11 +214,11 @@ export function createApp(store = new SqliteStore()) {
 
       return send(res, 404, { error: 'not found' });
     } catch (err) {
-      // Bekannte Client-Fehler (Body zu groß, kaputtes JSON) sauber melden.
+      // Report known client errors (body too large, broken JSON) cleanly.
       if (err instanceof HttpError) {
         return send(res, err.httpStatus, { error: err.message });
       }
-      // Unerwartete Fehler: serverseitig loggen, dem Client nur generisch melden.
+      // Unexpected errors: log server-side, give the client only a generic message.
       console.error('calfeed internal error:', err);
       return send(res, 500, { error: 'internal server error' });
     }
@@ -228,7 +228,7 @@ export function createApp(store = new SqliteStore()) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Fail-fast: kein stiller funktionierender Default-Admin-Token im echten Start.
+  // Fail fast: no silently working default administrator token on a real start.
   const t = process.env.CALFEED_ADMIN_TOKEN;
   if (!t || t === 'dev-admin-token' || t === 'change-me') {
     console.error(

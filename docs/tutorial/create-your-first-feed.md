@@ -16,7 +16,7 @@ calfeed reads an administrator token from the environment. Pick a value you cont
 start the server on the default port `8787`:
 
 ```bash
-CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.mjs
+CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.js
 ```
 
 The server prints `calfeed listening on :8787` and keeps running. Leave it running and

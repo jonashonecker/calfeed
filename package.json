@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "Minimal CRUD backend that serves subscribable read-only iCal (.ics) feeds. Push events via token, subscribe on any calendar app.",
   "type": "module",
-  "main": "src/server.mjs",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.mjs",
+    "start": "node src/server.js",
     "test": "./test/run.sh"
   },
   "engines": {

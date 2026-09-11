@@ -19,7 +19,7 @@ In that case it prints an error and exits. Set your own value before starting, s
 else can create calendars:
 
 ```bash
-CALFEED_ADMIN_TOKEN=a-long-random-string node src/server.mjs
+CALFEED_ADMIN_TOKEN=a-long-random-string node src/server.js
 ```
 
 ## The base URL
@@ -29,7 +29,7 @@ calfeed reads the `CALFEED_BASE_URL` value to build the feed URLs it returns. Th
 clients reach, including the scheme:
 
 ```bash
-CALFEED_BASE_URL=https://calfeed.example.com node src/server.mjs
+CALFEED_BASE_URL=https://calfeed.example.com node src/server.js
 ```
 
 With that value, a new calendar returns
@@ -43,7 +43,7 @@ behind a reverse proxy the server can listen on one port while clients reach it 
 different public URL:
 
 ```bash
-CALFEED_ADMIN_TOKEN=a-long-random-string PORT=9000 node src/server.mjs
+CALFEED_ADMIN_TOKEN=a-long-random-string PORT=9000 node src/server.js
 ```
 
 ## Storage

@@ -18,7 +18,7 @@ you can protect a feed with a password through HTTP Basic authentication. See
 Start the server with an administrator token:
 
 ```bash
-CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.mjs
+CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.js
 ```
 
 Create a calendar, push an event, and read the feed:

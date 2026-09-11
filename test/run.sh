@@ -25,7 +25,7 @@ CALFEED_DB="$DB" \
 CALFEED_ADMIN_TOKEN="$ADMIN_TOKEN" \
 CALFEED_BASE_URL="$BASE" \
 PORT="$PORT" \
-  node "$ROOT/src/server.mjs" &
+  node "$ROOT/src/server.js" &
 SERVER_PID=$!
 
 # Wait until the server answers (max ~5s).
