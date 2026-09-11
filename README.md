@@ -1,17 +1,6 @@
-# calfeed
-
 <img src="docs/media/calfeed-logo.svg" alt="calfeed logo" width="120" align="right">
 
-Serve subscribable, read-only calendar feeds. Clients push events over a small HTTP API,
-and you subscribe to the resulting `.ics` feed in any calendar app, including the iOS
-Calendar widget.
-
-calfeed is a zero-dependency Node backend. It needs Node 22.13 or later and stores data
-in SQLite through the built-in `node:sqlite` module.
-
-Each feed lives at a long, unguessable feed token that you can rotate if a URL leaks, and
-you can protect a feed with a password through HTTP Basic authentication. See
-[Feed privacy](/docs/explanation/feed-privacy.md).
+**calfeed** serves subscribable, read-only calendar feeds. Clients push events over a small HTTP API, and you subscribe to the resulting `.ics` feed in any calendar app. Each feed lives at a long, unguessable URL that you can rotate if it leaks. For sensitive calendars, add a password through HTTP Basic authentication.
 
 ## 🌱 Tutorials
 
