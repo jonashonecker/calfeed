@@ -25,6 +25,7 @@ gains a feature, its contract file is the one place to extend.
 - `contract/events.hurl` covers `POST /events` and `DELETE /events/:uid`.
 - `contract/feed.hurl` covers `GET /cal/:feed_token.ics`, and closes with the full
   round trip: create, push, read, delete, empty feed.
+- `contract/feed-password.hurl` covers `PUT /calendars/:id/feed-password`.
 
 ## Scenario tests: one file per property
 

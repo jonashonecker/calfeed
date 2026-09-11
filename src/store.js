@@ -124,7 +124,9 @@ export class SqliteStore {
   }
 
   addEvent(calendarId, { uid, summary, description, location, dtstart, dtend }) {
-    const eventUid = uid || randomUUID();
+    // ?? instead of ||: a falsy-but-valid uid must never be silently
+    // replaced by a random one (that would break upsert and delete).
+    const eventUid = uid ?? randomUUID();
     const existing = this.db.prepare(
       'SELECT id FROM events WHERE calendar_id=? AND uid=?'
     ).get(calendarId, eventUid);

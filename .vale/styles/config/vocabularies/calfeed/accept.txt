@@ -3,13 +3,21 @@ auditability
 auditable
 base64
 base64url
+boolean
 calfeed
+canonicaliz(e|es|ed|ation)
+dereference
+dtend
+dtstart
+expectedId
+falsy
 feed_password
 feed_token
 feed_token_hash
 iCal
 iCalendar
 ISO 8601
+libuv
 multibyte
 plaintext
 randomBytes
@@ -19,10 +27,13 @@ rotatable
 scrypt
 SQLite
 subscribable
+threadpool
 token_hash
 UID
 uid
+uids
 unparseable
+unprotect
 upsert
 webcal
 API

@@ -219,3 +219,101 @@ Authorization: Bearer {{cal_token}}
 HTTP 404
 [Asserts]
 jsonpath "$.deleted" == false
+
+# ── A JSON-null body is a client error, not a crash ──────────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+```
+null
+```
+HTTP 400
+
+# ── Field types are enforced, not only presence ──────────────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": true,
+  "dtstart": "2026-09-11T09:00:00Z"
+}
+HTTP 400
+
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Typed fields",
+  "description": 5,
+  "dtstart": "2026-09-11T09:00:00Z"
+}
+HTTP 400
+
+# ── A non-string uid is rejected, not silently replaced ──────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "uid": 0,
+  "summary": "Numeric uid",
+  "dtstart": "2026-09-11T09:00:00Z"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.error" == "invalid uid"
+
+# ── A numeric dtstart must not poison the feed ───────────────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Numeric date",
+  "dtstart": 1757577600000
+}
+HTTP 400
+[Asserts]
+jsonpath "$.error" == "invalid dtstart"
+
+# ── Dates without an explicit timezone are rejected ──────────────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "No timezone",
+  "dtstart": "2026-09-11T09:00:00"
+}
+HTTP 400
+
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Locale date",
+  "dtstart": "Sep 10 2026"
+}
+HTTP 400
+
+# ── The feed still renders, nothing slipped in ────────────────────
+GET {{feed_url}}
+HTTP 200
+[Asserts]
+body contains "BEGIN:VCALENDAR"
+# two events remain: the clean uid and normal-size
+body split "BEGIN:VEVENT" count == 3
+
+# ── An explicit offset is accepted and canonicalized to UTC ──────
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "uid": "tzoffset",
+  "summary": "Offset input",
+  "dtstart": "2026-09-19T11:00:00+02:00"
+}
+HTTP 201
+
+GET {{feed_url}}
+HTTP 200
+[Asserts]
+body contains "DTSTART:20260919T090000Z"
+
+DELETE {{base}}/events/tzoffset
+Authorization: Bearer {{cal_token}}
+HTTP 200
+
+# ── Malformed percent-encoding in the uid path is a client error ─
+DELETE {{base}}/events/%zz
+Authorization: Bearer {{cal_token}}
+HTTP 400

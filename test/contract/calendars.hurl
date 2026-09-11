@@ -45,6 +45,22 @@ Authorization: Bearer {{admin_token}}
 }
 HTTP 400
 
+# ── A non-string name is rejected ─────────────────────────────────
+POST {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+{
+  "name": {}
+}
+HTTP 400
+
+# ── A JSON-null body is a client error, not a crash ──────────────
+POST {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+```
+null
+```
+HTTP 400
+
 # ── A calendar token cannot create calendars ─────────────────────
 POST {{base}}/calendars
 Authorization: Bearer {{cal_token}}

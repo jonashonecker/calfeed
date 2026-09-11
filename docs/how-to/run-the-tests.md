@@ -52,6 +52,7 @@ test per cross-cutting property. For the reasoning behind that split, see
 - `contract/calendars.hurl`: the `POST /calendars` contract.
 - `contract/events.hurl`: the `POST /events` and `DELETE /events/:uid` contracts.
 - `contract/feed.hurl`: the `GET /cal/:feed_token.ics` contract and the full round trip.
+- `contract/feed-password.hurl`: the `PUT /calendars/:id/feed-password` contract.
 - `scenarios/feed-privacy.hurl`: rotation and password lifecycle.
 - `scenarios/isolation.hurl`: cross-tenant isolation between calendars.
 - `scenarios/ical-format.hurl`: iCal escaping, line folding, UTF-8, ordering, and `DTEND`.

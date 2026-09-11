@@ -58,8 +58,8 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `summary` | string | Yes | Event title. |
-| `dtstart` | string | Yes | Start time in ISO 8601, such as `2026-09-10T17:00:00Z`. |
-| `dtend` | string | No | End time in ISO 8601. |
+| `dtstart` | string | Yes | Start time in ISO 8601 with an explicit offset, such as `2026-09-10T17:00:00Z` or `2026-09-10T19:00:00+02:00`. |
+| `dtend` | string | No | End time, same format as `dtstart`. |
 | `uid` | string | No | Stable identifier. calfeed generates one if you omit it. Allowed characters are letters, digits, and `-` `_` `.` `@`. |
 | `description` | string | No | Longer text for the event. |
 | `location` | string | No | Where the event happens. |
@@ -67,12 +67,14 @@ Request body:
 Returns `201` with `{ "id", "uid", "updated": false }` for a new event, or `200` with
 `{ "updated": true }` when you update an existing `uid`.
 
-calfeed validates the request before it stores anything. A `dtstart` or `dtend` date that
-calfeed fails to parse returns `400` with `{ "error": "invalid dtstart" }` or
-`{ "error": "invalid dtend" }`. A `uid` value with any other character returns `400` with
+calfeed validates the request before it stores anything, and every field must have the
+listed type. A `dtstart` or `dtend` value that isn't an ISO 8601 string with an explicit
+offset returns `400` with `{ "error": "invalid dtstart" }` or `{ "error": "invalid dtend" }`.
+A `uid` value that isn't a string of allowed characters returns `400` with
 `{ "error": "invalid uid" }`. A request body larger than 256&nbsp;KB returns `413` with
-`{ "error": "payload too large" }`, and a body that fails to parse as JSON returns
-`400` with `{ "error": "invalid JSON" }`.
+`{ "error": "payload too large" }`, a body that fails to parse as JSON returns `400` with
+`{ "error": "invalid JSON" }`, and a body that isn't a JSON object returns `400` with
+`{ "error": "body must be a JSON object" }`.
 
 ### Delete an event
 
@@ -113,7 +115,7 @@ Request body:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `password` | string or null | Yes | A string turns on Basic authentication. `null` turns it off. |
+| `password` | string or null | Yes | A non-empty string of at most 1024 characters turns on Basic authentication. `null` or `""` turns it off. Any other type returns `400`. |
 
 Returns `200` with:
 
@@ -152,6 +154,9 @@ the form `webcal://user:password@host/cal/:feed_token.ics`.
 
 ## Dates
 
-Send dates in ISO 8601. calfeed converts them to iCalendar Coordinated Universal Time (UTC)
-in the feed, so `2026-09-10T17:00:00Z` becomes `20260910T170000Z`. calfeed rejects an
-unparseable date at write time with a `400`, so a bad date never reaches the feed.
+Send dates in ISO 8601 with an explicit offset: `Z` for Coordinated Universal Time (UTC),
+or `+hh:mm`/`-hh:mm`. calfeed stores and serves every date in UTC, so
+`2026-09-10T19:00:00+02:00` becomes `20260910T170000Z` in the feed. calfeed rejects a
+date without an offset at write time with a `400`, because it would otherwise change
+meaning with the server's timezone. Any other unparseable date gets the same `400`, so a
+bad date never reaches the feed.

@@ -55,7 +55,10 @@ export function buildICal(calendar, events) {
 
   for (const ev of events) {
     lines.push('BEGIN:VEVENT');
-    lines.push(`UID:${ev.uid}@calfeed`);
+    // Defense in depth: the API validates uids, but the generator owns the
+    // format and never emits control characters onto the UID line (rows
+    // from old databases or future import paths bypass the route check).
+    lines.push(`UID:${String(ev.uid).replace(/[^A-Za-z0-9._@-]/g, '')}@calfeed`);
     lines.push(`DTSTAMP:${stamp}`);
     lines.push(`DTSTART:${toICalDate(ev.dtstart)}`);
     if (ev.dtend) lines.push(`DTEND:${toICalDate(ev.dtend)}`);

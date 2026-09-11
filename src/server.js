@@ -13,16 +13,37 @@
  *   Level 3: optional feed_password → the feed requires HTTP Basic Auth.
  */
 import { createServer } from 'node:http';
-import { timingSafeEqual, scryptSync } from 'node:crypto';
+import { timingSafeEqual, scrypt } from 'node:crypto';
+import { promisify } from 'node:util';
 import { SqliteStore } from './store.js';
 import { buildICal } from './ical.js';
+
+const scryptAsync = promisify(scrypt);
 
 // Maximum request body size (guards against memory exhaustion).
 const MAX_BODY_BYTES = 262144; // 256 KB
 
+// Bound on password inputs, so a single request can't feed scrypt
+// arbitrarily large material.
+const MAX_PASSWORD_LENGTH = 1024;
+
 // The uid allowlist (alphanumeric plus - _ . @) prevents CRLF injection
 // into the iCal UID line.
 const UID_RE = /^[A-Za-z0-9._@-]+$/;
+
+// Date inputs must be ISO 8601 WITH an explicit offset (Z or ±hh:mm).
+// Offset-less strings would silently shift with the server's timezone.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
+
+// Returns the canonical ISO-UTC form of a date input, or null if the input
+// isn't an ISO 8601 string with an explicit offset. Storing the canonical
+// form keeps rendering timezone-independent and the dtstart sort correct.
+function canonicalDate(v) {
+  if (typeof v !== 'string' || !ISO_DATE_RE.test(v)) return null;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
 
 // Error with an HTTP status, so readJson failures don't end up as a generic 500.
 class HttpError extends Error {
@@ -40,8 +61,11 @@ function safeEqual(a, b) {
 }
 
 // Checks a plaintext password against a stored "salt:hash" (base64, scrypt).
-function verifyFeedPassword(stored, candidate) {
+// Deliberately asynchronous: the derivation runs on the libuv threadpool,
+// so unauthenticated requests can't stall the event loop with scrypt work.
+async function verifyFeedPassword(stored, candidate) {
   if (typeof stored !== 'string' || !stored.includes(':')) return false;
+  if (String(candidate).length > MAX_PASSWORD_LENGTH) return false;
   const [saltB64, hashB64] = stored.split(':');
   let salt, expected;
   try {
@@ -51,7 +75,7 @@ function verifyFeedPassword(stored, candidate) {
     return false;
   }
   if (salt.length === 0 || expected.length === 0) return false;
-  const actual = scryptSync(String(candidate), salt, expected.length);
+  const actual = await scryptAsync(String(candidate), salt, expected.length);
   if (actual.length !== expected.length) return false;
   return timingSafeEqual(actual, expected);
 }
@@ -77,11 +101,17 @@ export function createApp(store = new SqliteStore()) {
     }
     if (tooLarge) throw new HttpError(413, 'payload too large');
     if (!chunks.length) return {};
+    let parsed;
     try {
-      return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch {
       throw new HttpError(400, 'invalid JSON');
     }
+    // Handlers dereference the body, so null/arrays/scalars are client errors.
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new HttpError(400, 'body must be a JSON object');
+    }
+    return parsed;
   }
 
   function send(res, status, body, headers = {}) {
@@ -116,6 +146,18 @@ export function createApp(store = new SqliteStore()) {
     };
   }
 
+  // Resolves the calendar for the request's Bearer token. With an expectedId,
+  // the token must also OWN that calendar: every id-scoped route needs this,
+  // or any valid token could act on another tenant's calendar.
+  function requireCalendar(req, res, expectedId) {
+    const cal = store.findCalendarByToken(bearer(req));
+    if (!cal || (expectedId !== undefined && cal.id !== expectedId)) {
+      send(res, 401, { error: 'valid calendar token required' });
+      return null;
+    }
+    return cal;
+  }
+
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, BASE_URL);
@@ -130,7 +172,7 @@ export function createApp(store = new SqliteStore()) {
         // Level 3: calendars with a feed_password require Basic Auth
         if (cal.feed_password) {
           const creds = basicAuth(req);
-          if (!creds || !verifyFeedPassword(cal.feed_password, creds.pass)) {
+          if (!creds || !(await verifyFeedPassword(cal.feed_password, creds.pass))) {
             return send(res, 401, { error: 'authentication required' }, {
               'WWW-Authenticate': 'Basic realm="calfeed"',
             });
@@ -151,7 +193,9 @@ export function createApp(store = new SqliteStore()) {
           return send(res, 401, { error: 'admin token required' });
         }
         const body = await readJson(req);
-        if (!body.name) return send(res, 400, { error: 'name required' });
+        if (typeof body.name !== 'string' || body.name.length === 0) {
+          return send(res, 400, { error: 'name required' });
+        }
         const cal = store.createCalendar(body.name);
         return send(res, 201, {
           id: cal.id, name: cal.name, token: cal.token, ...subscribeUrls(cal.feed_token),
@@ -161,8 +205,8 @@ export function createApp(store = new SqliteStore()) {
       // POST /calendars/:id/rotate-feed: new feed token (calendar token)
       let m = path.match(/^\/calendars\/([^/]+)\/rotate-feed$/);
       if (req.method === 'POST' && m) {
-        const cal = store.findCalendarByToken(bearer(req));
-        if (!cal || cal.id !== m[1]) return send(res, 401, { error: 'valid calendar token required' });
+        const cal = requireCalendar(req, res, m[1]);
+        if (!cal) return;
         const newFeedToken = store.rotateFeedToken(cal.id);
         return send(res, 200, { rotated: true, ...subscribeUrls(newFeedToken) });
       }
@@ -170,44 +214,72 @@ export function createApp(store = new SqliteStore()) {
       // PUT /calendars/:id/feed-password: set or clear Basic Auth (calendar token)
       m = path.match(/^\/calendars\/([^/]+)\/feed-password$/);
       if (req.method === 'PUT' && m) {
-        const cal = store.findCalendarByToken(bearer(req));
-        if (!cal || cal.id !== m[1]) return send(res, 401, { error: 'valid calendar token required' });
+        const cal = requireCalendar(req, res, m[1]);
+        if (!cal) return;
         const body = await readJson(req);
-        // password: string → protect the feed; null or empty → remove protection
-        const pw = body.password ? String(body.password) : null;
+        // password: non-empty string → protect the feed; null or "" → remove
+        // protection. Anything else is a client error: a falsy non-string
+        // (0, false) must never silently unprotect the feed.
+        if (body.password != null && typeof body.password !== 'string') {
+          return send(res, 400, { error: 'invalid password' });
+        }
+        if (typeof body.password === 'string' && body.password.length > MAX_PASSWORD_LENGTH) {
+          return send(res, 400, { error: 'password too long' });
+        }
+        const pw = body.password ? body.password : null;
         store.setFeedPassword(cal.id, pw);
         return send(res, 200, { protected: pw !== null });
       }
 
       // POST /events: a client pushes an event (calendar token)
       if (req.method === 'POST' && path === '/events') {
-        const cal = store.findCalendarByToken(bearer(req));
-        if (!cal) return send(res, 401, { error: 'valid calendar token required' });
+        const cal = requireCalendar(req, res);
+        if (!cal) return;
         const body = await readJson(req);
         if (!body.summary || !body.dtstart) {
           return send(res, 400, { error: 'summary and dtstart required' });
         }
-        // uid (when given) must match the allowlist → no iCal injection.
-        if (body.uid != null && !UID_RE.test(String(body.uid))) {
+        // Types matter, not only presence: a boolean summary would pass the
+        // presence check and blow up at the SQLite binding as a 500.
+        if (typeof body.summary !== 'string') {
+          return send(res, 400, { error: 'invalid summary' });
+        }
+        if (body.description != null && typeof body.description !== 'string') {
+          return send(res, 400, { error: 'invalid description' });
+        }
+        if (body.location != null && typeof body.location !== 'string') {
+          return send(res, 400, { error: 'invalid location' });
+        }
+        // uid (when given) must be a string on the allowlist → no iCal
+        // injection, and no falsy uid (0) silently replaced by a random one.
+        if (body.uid != null && (typeof body.uid !== 'string' || !UID_RE.test(body.uid))) {
           return send(res, 400, { error: 'invalid uid' });
         }
-        // Validate date fields server-side so a broken date never reaches the
-        // database and poisons the whole feed later.
-        if (isNaN(new Date(body.dtstart).getTime())) {
-          return send(res, 400, { error: 'invalid dtstart' });
+        // The write boundary canonicalizes dates to ISO-UTC, so a broken or
+        // ambiguous date never reaches the database and poisons the feed or
+        // shifts with the server's timezone.
+        const dtstart = canonicalDate(body.dtstart);
+        if (!dtstart) return send(res, 400, { error: 'invalid dtstart' });
+        let dtend = null;
+        if (body.dtend != null) {
+          dtend = canonicalDate(body.dtend);
+          if (!dtend) return send(res, 400, { error: 'invalid dtend' });
         }
-        if (body.dtend != null && isNaN(new Date(body.dtend).getTime())) {
-          return send(res, 400, { error: 'invalid dtend' });
-        }
-        const result = store.addEvent(cal.id, body);
+        const result = store.addEvent(cal.id, { ...body, dtstart, dtend });
         return send(res, result.updated ? 200 : 201, result);
       }
 
       // DELETE /events/:uid: a client deletes an event
       if (req.method === 'DELETE' && path.startsWith('/events/')) {
-        const cal = store.findCalendarByToken(bearer(req));
-        if (!cal) return send(res, 401, { error: 'valid calendar token required' });
-        const uid = decodeURIComponent(path.slice('/events/'.length));
+        const cal = requireCalendar(req, res);
+        if (!cal) return;
+        let uid;
+        try {
+          uid = decodeURIComponent(path.slice('/events/'.length));
+        } catch {
+          // Malformed percent-encoding is a client error, not a 500.
+          return send(res, 400, { error: 'invalid uid encoding' });
+        }
         const deleted = store.deleteEvent(cal.id, uid);
         return send(res, deleted ? 200 : 404, { deleted });
       }
