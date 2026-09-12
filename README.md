@@ -1,4 +1,6 @@
-<img src="docs/media/calfeed-logo.svg" alt="calfeed logo" width="120" align="right">
+<p align="center">
+  <img src="docs/media/calfeed-logo.svg" alt="calfeed logo" width="120">
+</p>
 
 **calfeed** serves subscribable, read-only calendar feeds. Clients push events over a small HTTP API, and you subscribe to the resulting `.ics` feed in any calendar app. Each feed lives at a long, unguessable URL that you can rotate if it leaks. For sensitive calendars, add a password through HTTP Basic authentication.
 
