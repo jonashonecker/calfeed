@@ -3,6 +3,10 @@
 calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete
 events, and calendar apps read the feed.
 
+A machine-readable [OpenAPI description](/docs/reference/openapi.yaml) of the same contract sits
+next to this page. Load it into Swagger UI, render it with a documentation viewer, or generate a
+client from it.
+
 ## Base URL
 
 The server listens on the port from `PORT`, which defaults to `8787`. The examples use
