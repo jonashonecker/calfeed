@@ -10,23 +10,24 @@
  */
 import { parseArgs } from 'node:util';
 
-const USAGE = `usage: calfeed <command> [options]
+const USAGE = `usage: calfeed <resource> <action> [options]
 
 commands:
-  create <name>                create a calendar (administrator token)
-  push --summary S --dtstart D [--dtend D] [--uid U] [--description T] [--location L]
-                               add or update an event (calendar token)
-  delete <uid>                 delete an event (calendar token)
-  rotate <calendar-id>         rotate the feed token (calendar token)
-  password <calendar-id> --set <password> | --clear
-                               set or clear the feed password (calendar token)
-  feed <subscribe-url> [--password <password>]
-                               fetch the .ics feed and print it
-  help                         show this text
+  calendar create <name>        create a calendar (administrator token)
+  event push --summary S --dtstart D [--dtend D] [--uid U] [--description T] [--location L]
+                                add or update an event (calendar token)
+  event delete <uid>            delete an event (calendar token)
+  feed show <subscribe-url> [--password <password>]
+                                fetch the .ics feed and print it
+  feed rotate <calendar-id>     rotate the feed token (calendar token)
+  feed protect <calendar-id> --password <password>
+                                require Basic authentication on the feed (calendar token)
+  feed unprotect <calendar-id>  remove the feed password (calendar token)
+  help                          show this text
 
 options:
   --url URL    server base URL (default: CALFEED_URL or http://localhost:8787)
-  --token T    token to use (default: CALFEED_TOKEN; CALFEED_ADMIN_TOKEN for create)
+  --token T    token to use (default: CALFEED_TOKEN; CALFEED_ADMIN_TOKEN for calendar create)
   --json       print the raw JSON response instead of key: value lines
 `;
 
@@ -49,8 +50,6 @@ try {
       uid: { type: 'string' },
       description: { type: 'string' },
       location: { type: 'string' },
-      set: { type: 'string' },
-      clear: { type: 'boolean', default: false },
       password: { type: 'string' },
     },
   });
@@ -111,18 +110,20 @@ function printResponse(text) {
   }
 }
 
-const command = positionals[0];
+// Docker-style dispatch: the first positional names the resource and the
+// second the action, giving commands like `calendar create` or `feed rotate`.
+const command = positionals.slice(0, 2).join(' ');
 
 switch (command) {
-  case 'create': {
-    const name = positionals[1];
-    if (!name) fail('usage: calfeed create <name>');
+  case 'calendar create': {
+    const name = positionals[2];
+    if (!name) fail('usage: calfeed calendar create <name>');
     const token = requireToken('CALFEED_ADMIN_TOKEN');
     printResponse(await request('POST', '/calendars', { token, body: { name } }));
     break;
   }
 
-  case 'push': {
+  case 'event push': {
     const token = requireToken('CALFEED_TOKEN');
     const body = {};
     for (const field of ['summary', 'dtstart', 'dtend', 'uid', 'description', 'location']) {
@@ -132,17 +133,24 @@ switch (command) {
     break;
   }
 
-  case 'delete': {
-    const uid = positionals[1];
-    if (!uid) fail('usage: calfeed delete <uid>');
+  case 'event delete': {
+    const uid = positionals[2];
+    if (!uid) fail('usage: calfeed event delete <uid>');
     const token = requireToken('CALFEED_TOKEN');
     printResponse(await request('DELETE', `/events/${encodeURIComponent(uid)}`, { token }));
     break;
   }
 
-  case 'rotate': {
-    const id = positionals[1];
-    if (!id) fail('usage: calfeed rotate <calendar-id>');
+  case 'feed show': {
+    const feedUrl = positionals[2];
+    if (!feedUrl) fail('usage: calfeed feed show <subscribe-url> [--password <password>]');
+    process.stdout.write(await request('GET', feedUrl, { basicPassword: flags.password }));
+    break;
+  }
+
+  case 'feed rotate': {
+    const id = positionals[2];
+    if (!id) fail('usage: calfeed feed rotate <calendar-id>');
     const token = requireToken('CALFEED_TOKEN');
     printResponse(
       await request('POST', `/calendars/${encodeURIComponent(id)}/rotate-feed`, { token }),
@@ -150,27 +158,31 @@ switch (command) {
     break;
   }
 
-  case 'password': {
-    const id = positionals[1];
-    const hasSet = flags.set !== undefined;
-    // Exactly one of --set and --clear.
-    if (!id || hasSet === flags.clear) {
-      fail('usage: calfeed password <calendar-id> --set <password> | --clear');
+  case 'feed protect': {
+    const id = positionals[2];
+    if (!id || flags.password === undefined) {
+      fail('usage: calfeed feed protect <calendar-id> --password <password>');
     }
     const token = requireToken('CALFEED_TOKEN');
     printResponse(
       await request('PUT', `/calendars/${encodeURIComponent(id)}/feed-password`, {
         token,
-        body: { password: hasSet ? flags.set : null },
+        body: { password: flags.password },
       }),
     );
     break;
   }
 
-  case 'feed': {
-    const feedUrl = positionals[1];
-    if (!feedUrl) fail('usage: calfeed feed <subscribe-url> [--password <password>]');
-    process.stdout.write(await request('GET', feedUrl, { basicPassword: flags.password }));
+  case 'feed unprotect': {
+    const id = positionals[2];
+    if (!id) fail('usage: calfeed feed unprotect <calendar-id>');
+    const token = requireToken('CALFEED_TOKEN');
+    printResponse(
+      await request('PUT', `/calendars/${encodeURIComponent(id)}/feed-password`, {
+        token,
+        body: { password: null },
+      }),
+    );
     break;
   }
 
@@ -178,11 +190,14 @@ switch (command) {
     console.log(USAGE);
     break;
 
-  case undefined:
+  case '':
     console.error(USAGE);
     process.exit(1);
     break;
 
   default:
+    if (positionals.length === 1) {
+      fail(`'${positionals[0]}' needs an action (try: calfeed help)`);
+    }
     fail(`unknown command '${command}' (try: calfeed help)`);
 }

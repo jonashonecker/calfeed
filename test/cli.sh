@@ -57,36 +57,36 @@ done
 export CALFEED_URL="$BASE"
 
 # ── Round trip ─────────────────────────────────────────────────────
-CREATE_JSON="$(CALFEED_ADMIN_TOKEN="$ADMIN_TOKEN" cli create "CLI Smoke" --json)"
+CREATE_JSON="$(CALFEED_ADMIN_TOKEN="$ADMIN_TOKEN" cli calendar create "CLI Smoke" --json)"
 CAL_ID="$(json_field "$CREATE_JSON" id)"
 FEED_URL="$(json_field "$CREATE_JSON" subscribe_url)"
 export CALFEED_TOKEN="$(json_field "$CREATE_JSON" token)"
 
-cli push --summary "Smoke event" --dtstart "2026-09-20T10:00:00Z" --uid smoke-1 >/dev/null
-cli push --summary "Generated uid" --dtstart "2026-09-21T10:00:00Z" >/dev/null
+cli event push --summary "Smoke event" --dtstart "2026-09-20T10:00:00Z" --uid smoke-1 >/dev/null
+cli event push --summary "Generated uid" --dtstart "2026-09-21T10:00:00Z" >/dev/null
 
-cli feed "$FEED_URL" | grep -q "BEGIN:VCALENDAR" || fail "feed lacks BEGIN:VCALENDAR"
-cli feed "$FEED_URL" | grep -q "SUMMARY:Smoke event" || fail "feed lacks the pushed event"
+cli feed show "$FEED_URL" | grep -q "BEGIN:VCALENDAR" || fail "feed lacks BEGIN:VCALENDAR"
+cli feed show "$FEED_URL" | grep -q "SUMMARY:Smoke event" || fail "feed lacks the pushed event"
 
-cli password "$CAL_ID" --set s3cret | grep -q "protected: true" || fail "setting a password"
-if cli feed "$FEED_URL" >/dev/null 2>&1; then
+cli feed protect "$CAL_ID" --password s3cret | grep -q "protected: true" || fail "setting a password"
+if cli feed show "$FEED_URL" >/dev/null 2>&1; then
   fail "protected feed served without a password"
 fi
-cli feed "$FEED_URL" --password s3cret | grep -q "BEGIN:VCALENDAR" || fail "feed with password"
+cli feed show "$FEED_URL" --password s3cret | grep -q "BEGIN:VCALENDAR" || fail "feed with password"
 
-ROTATE_JSON="$(cli rotate "$CAL_ID" --json)"
+ROTATE_JSON="$(cli feed rotate "$CAL_ID" --json)"
 NEW_FEED="$(json_field "$ROTATE_JSON" subscribe_url)"
-if cli feed "$FEED_URL" --password s3cret >/dev/null 2>&1; then
+if cli feed show "$FEED_URL" --password s3cret >/dev/null 2>&1; then
   fail "pre-rotation URL still alive"
 fi
-cli feed "$NEW_FEED" --password s3cret | grep -q "BEGIN:VCALENDAR" || fail "rotated feed"
+cli feed show "$NEW_FEED" --password s3cret | grep -q "BEGIN:VCALENDAR" || fail "rotated feed"
 
-cli password "$CAL_ID" --clear | grep -q "protected: false" || fail "clearing the password"
-cli delete smoke-1 | grep -q "deleted: true" || fail "deleting an event"
+cli feed unprotect "$CAL_ID" | grep -q "protected: false" || fail "clearing the password"
+cli event delete smoke-1 | grep -q "deleted: true" || fail "deleting an event"
 
 # ── Failure path: wrong token → exit 1 + error on stderr ──────────
 set +e
-ERR="$(CALFEED_TOKEN=wrong-token cli push --summary X --dtstart 2026-09-20T10:00:00Z 2>&1 >/dev/null)"
+ERR="$(CALFEED_TOKEN=wrong-token cli event push --summary X --dtstart 2026-09-20T10:00:00Z 2>&1 >/dev/null)"
 STATUS=$?
 set -e
 [ "$STATUS" -eq 1 ] || fail "wrong token: expected exit 1, got $STATUS"
