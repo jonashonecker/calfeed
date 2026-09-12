@@ -5,6 +5,7 @@ base64
 base64url
 boolean
 calfeed
+CLI
 canonicaliz(e|es|ed|ation)
 dereference
 dtend
@@ -26,6 +27,7 @@ RFC 5545
 rotatable
 scrypt
 SQLite
+subcommands?
 subscribable
 threadpool
 token_hash

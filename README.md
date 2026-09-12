@@ -28,6 +28,7 @@ HTTP Basic authentication.
 > Technical reference material
 
 - [API reference](/docs/reference/api.md)
+- [CLI reference](/docs/reference/cli.md)
 - [Configuration](/docs/reference/configuration.md)
 
 ## 💡 Explanation
