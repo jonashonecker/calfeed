@@ -1,13 +1,13 @@
 # Rotate a feed token
 
-Replace a calendar's feed token, so the old subscribe URL stops working and a new one
-takes its place. Rotate when a feed URL leaks, for example when you shared it with the
-wrong person or committed it to a public repository.
+Replace a calendar's feed token, so the old subscribe URL stops working and a new one takes its
+place. Rotate when a feed URL leaks, for example when you shared it with the wrong person or
+committed it to a public repository.
 
 ## What you need
 
-- The calendar `token` from when you created the calendar. It goes in the `Authorization`
-  header as a Bearer token.
+- The calendar `token` from when you created the calendar. It goes in the `Authorization` header as
+  a Bearer token.
 - The calendar `id`, which you also received when you created the calendar.
 - The server's base URL, such as `http://localhost:8787`.
 
@@ -33,15 +33,13 @@ The server returns `200` with the new subscribe URLs:
 }
 ```
 
-The old feed token no longer resolves, so any request to the previous subscribe URL
-returns `404`.
+The old feed token no longer resolves, so any request to the previous subscribe URL returns `404`.
 
 ## Re-subscribe with the new URL
 
-Rotating the token breaks every existing subscription, because each subscriber still holds
-the old URL. Send the new `subscribe_url` or `webcal_url` to everyone who needs the feed,
-and have them subscribe again. On iOS, see
-[Subscribe on iOS](/docs/how-to/subscribe-on-ios.md).
+Rotating the token breaks every existing subscription, because each subscriber still holds the old
+URL. Send the new `subscribe_url` or `webcal_url` to everyone who needs the feed, and have them
+subscribe again. On iOS, see [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md).
 
 ## Related
 

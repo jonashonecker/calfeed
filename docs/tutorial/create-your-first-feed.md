@@ -1,34 +1,33 @@
 # Create your first feed
 
-In this tutorial you'll start the calfeed server, create a calendar, push an event to it,
-fetch the calendar as an `.ics` file, and subscribe to it in a calendar app. By the end
-you'll have a live, subscribable feed that updates whenever you push a new event.
+In this tutorial you'll start the calfeed server, create a calendar, push an event to it, fetch the
+calendar as an `.ics` file, and subscribe to it in a calendar app. By the end you'll have a live,
+subscribable feed that updates whenever you push a new event.
 
 ## Before you start
 
-Install Node 26 or later, since calfeed uses the built-in `node:sqlite` module. calfeed
-has no other dependencies. Clone the calfeed repository and open a terminal in its root
-folder. Make sure `curl` is available so you can talk to the server.
+Install Node 26 or later, since calfeed uses the built-in `node:sqlite` module. calfeed has no other
+dependencies. Clone the calfeed repository and open a terminal in its root folder. Make sure `curl`
+is available so you can talk to the server.
 
 ## Start the server
 
-calfeed reads an administrator token from the environment. Pick a value you control and
-start the server on the default port `8787`:
+calfeed reads an administrator token from the environment. Pick a value you control and start the
+server on the default port `8787`:
 
 ```bash
 CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/server.js
 ```
 
-The server prints `calfeed listening on :8787` and keeps running. Leave it running and
-open a second terminal for the rest of the tutorial.
+The server prints `calfeed listening on :8787` and keeps running. Leave it running and open a second
+terminal for the rest of the tutorial.
 
-For every environment variable calfeed reads, see
-[Configuration](/docs/reference/configuration.md).
+For every environment variable calfeed reads, see [Configuration](/docs/reference/configuration.md).
 
 ## Create a calendar
 
-Only you can create calendars, so this call needs the administrator token. Ask the server
-for a new calendar named `Family`:
+Only you can create calendars, so this call needs the administrator token. Ask the server for a new
+calendar named `Family`:
 
 ```bash
 curl -X POST http://localhost:8787/calendars \
@@ -49,16 +48,15 @@ The response is a JSON object:
 }
 ```
 
-Copy the `token` and the `id`. The `token` is the only credential that can write to this
-calendar, so keep it private. The `subscribe_url` and `webcal_url` already contain the
-calendar's long feed token, which is what a calendar app subscribes to. To learn why each
-calendar has its own token, see
+Copy the `token` and the `id`. The `token` is the only credential that can write to this calendar,
+so keep it private. The `subscribe_url` and `webcal_url` already contain the calendar's long feed
+token, which is what a calendar app subscribes to. To learn why each calendar has its own token, see
 [A token per calendar](/docs/explanation/token-per-calendar.md).
 
 ## Push an event
 
-Use the calendar `token` from the previous step to add an event. Dates use ISO 8601,
-such as `2026-09-10T17:00:00Z`:
+Use the calendar `token` from the previous step to add an event. Dates use ISO 8601, such as
+`2026-09-10T17:00:00Z`:
 
 ```bash
 curl -X POST http://localhost:8787/events \
@@ -83,9 +81,8 @@ To push events from a script and update them later, see
 
 ## Fetch the feed
 
-The feed is public and needs no token, because that's what a calendar app subscribes to.
-Fetch it with the `subscribe_url` from the create-calendar step, which contains the feed
-token:
+The feed is public and needs no token, because that's what a calendar app subscribes to. Fetch it
+with the `subscribe_url` from the create-calendar step, which contains the feed token:
 
 ```bash
 curl http://localhost:8787/cal/9Xk3...feed-token....ics
@@ -115,9 +112,8 @@ The ISO 8601 date you sent becomes iCalendar Coordinated Universal Time (UTC), s
 
 ## Subscribe in a calendar app
 
-Any calendar app can subscribe to the feed. On a computer, add a subscription calendar
-and paste the `subscribe_url` from the create-calendar step. The app polls the feed and
-shows your event.
+Any calendar app can subscribe to the feed. On a computer, add a subscription calendar and paste the
+`subscribe_url` from the create-calendar step. The app polls the feed and shows your event.
 
 On an iPhone, use the `webcal_url` instead. See
 [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md).
@@ -133,5 +129,5 @@ curl -X POST http://localhost:8787/events \
   -d '{"summary":"Team standup","dtstart":"2026-09-11T08:00:00Z"}'
 ```
 
-The next time your calendar app refreshes the feed, the new event appears. You now have a
-working calfeed feed that stays in sync as you push events.
+The next time your calendar app refreshes the feed, the new event appears. You now have a working
+calfeed feed that stays in sync as you push events.

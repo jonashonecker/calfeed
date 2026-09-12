@@ -1,8 +1,8 @@
 # Run the tests
 
 calfeed's test suite is a set of language-independent black-box tests written in
-[Hurl](https://hurl.dev). They talk to a running server over HTTP only, so they keep
-working across refactors and rewrites in any language.
+[Hurl](https://hurl.dev). They talk to a running server over HTTP only, so they keep working across
+refactors and rewrites in any language.
 
 ## What you need
 
@@ -15,15 +15,15 @@ working across refactors and rewrites in any language.
 npm test
 ```
 
-The script behind the command, `test/run.sh`, starts calfeed on port `8799` with a
-throwaway SQLite database, waits until the server answers, runs every `.hurl` file in
-`test/`, and shuts the server down afterward.
+The script behind the command, `test/run.sh`, starts calfeed on port `8799` with a throwaway SQLite
+database, waits until the server answers, runs every `.hurl` file in `test/`, and shuts the server
+down afterward.
 
 ## Run a single file
 
-Every `.hurl` file is self-contained and creates the calendars it needs, so you can run
-one file on its own. Start a server. `CALFEED_BASE_URL` must point at the test port,
-because some tests follow the `subscribe_url` the server hands out:
+Every `.hurl` file is self-contained and creates the calendars it needs, so you can run one file on
+its own. Start a server. `CALFEED_BASE_URL` must point at the test port, because some tests follow
+the `subscribe_url` the server hands out:
 
 ```bash
 CALFEED_DB=/tmp/calfeed-dev.db \
@@ -32,8 +32,8 @@ CALFEED_BASE_URL=http://localhost:8799 \
 PORT=8799 node src/server.js
 ```
 
-Then point Hurl at the file, passing the two variables every test expects.
-`--file-root test` lets tests in the subdirectories find `test/fixtures/`:
+Then point Hurl at the file, passing the two variables every test expects. `--file-root test` lets
+tests in the subdirectories find `test/fixtures/`:
 
 ```bash
 hurl --test \
@@ -45,8 +45,8 @@ hurl --test \
 
 ## What the suite covers
 
-`test/contract/` holds one contract test per endpoint, `test/scenarios/` one scenario
-test per cross-cutting property. For the reasoning behind that split, see
+`test/contract/` holds one contract test per endpoint, `test/scenarios/` one scenario test per
+cross-cutting property. For the reasoning behind that split, see
 [Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md).
 
 - `contract/calendars.hurl`: the `POST /calendars` contract.
@@ -59,8 +59,8 @@ test per cross-cutting property. For the reasoning behind that split, see
 
 ## Continuous integration
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs the same suite on every
-push and pull request, plus a Docker build with a container smoke test.
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs the same suite on every push and pull
+request, plus a Docker build with a container smoke test.
 
 ## Related
 

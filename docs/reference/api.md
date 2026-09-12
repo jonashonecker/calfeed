@@ -1,6 +1,7 @@
 # API reference
 
-calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete events, and calendar apps read the feed.
+calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete
+events, and calendar apps read the feed.
 
 ## Base URL
 
@@ -16,10 +17,9 @@ calfeed uses two kinds of Bearer token in the `Authorization` header.
 | Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating calendars.                                                                                |
 | Calendar token      | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
 
-The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable
-`feed_token` in the URL controls who can reach it. If the calendar has a feed password,
-the feed also requires HTTP Basic authentication. See
-[Feed privacy](/docs/explanation/feed-privacy.md).
+The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable `feed_token` in
+the URL controls who can reach it. If the calendar has a feed password, the feed also requires HTTP
+Basic authentication. See [Feed privacy](/docs/explanation/feed-privacy.md).
 
 ## Endpoints
 
@@ -49,9 +49,8 @@ Returns `201` with:
 
 `POST /events`
 
-Add or update an event. Requires the calendar token. calfeed keys events on `uid` within
-a calendar: a repeated `uid` updates the existing event in place, an operation known as an
-upsert.
+Add or update an event. Requires the calendar token. calfeed keys events on `uid` within a calendar:
+a repeated `uid` updates the existing event in place, an operation known as an upsert.
 
 Request body:
 
@@ -67,14 +66,13 @@ Request body:
 Returns `201` with `{ "id", "uid", "updated": false }` for a new event, or `200` with
 `{ "updated": true }` when you update an existing `uid`.
 
-calfeed validates the request before it stores anything, and every field must have the
-listed type. A `dtstart` or `dtend` value that isn't an ISO 8601 string with an explicit
-offset returns `400` with `{ "error": "invalid dtstart" }` or `{ "error": "invalid dtend" }`.
-A `uid` value that isn't a string of allowed characters returns `400` with
-`{ "error": "invalid uid" }`. A request body larger than 256&nbsp;KB returns `413` with
-`{ "error": "payload too large" }`, a body that fails to parse as JSON returns `400` with
-`{ "error": "invalid JSON" }`, and a body that isn't a JSON object returns `400` with
-`{ "error": "body must be a JSON object" }`.
+calfeed validates the request before it stores anything, and every field must have the listed type.
+A `dtstart` or `dtend` value that isn't an ISO 8601 string with an explicit offset returns `400`
+with `{ "error": "invalid dtstart" }` or `{ "error": "invalid dtend" }`. A `uid` value that isn't a
+string of allowed characters returns `400` with `{ "error": "invalid uid" }`. A request body larger
+than 256&nbsp;KB returns `413` with `{ "error": "payload too large" }`, a body that fails to parse
+as JSON returns `400` with `{ "error": "invalid JSON" }`, and a body that isn't a JSON object
+returns `400` with `{ "error": "body must be a JSON object" }`.
 
 ### Delete an event
 
@@ -82,16 +80,16 @@ A `uid` value that isn't a string of allowed characters returns `400` with
 
 Delete an event by `uid`. Requires the calendar token.
 
-Returns `200` with `{ "deleted": true }` if the event existed, or `404` with
-`{ "deleted": false }` if no event in the calendar has that `uid`.
+Returns `200` with `{ "deleted": true }` if the event existed, or `404` with `{ "deleted": false }`
+if no event in the calendar has that `uid`.
 
 ### Rotate the feed token
 
 `POST /calendars/:id/rotate-feed`
 
-Generate a new feed token for the calendar. Requires the calendar token, and the `:id` in
-the path must match that token's calendar. Use this when a subscribe URL leaks: the new
-token replaces the old one, so the previous subscribe URL returns `404`.
+Generate a new feed token for the calendar. Requires the calendar token, and the `:id` in the path
+must match that token's calendar. Use this when a subscribe URL leaks: the new token replaces the
+old one, so the previous subscribe URL returns `404`.
 
 Returns `200` with:
 
@@ -101,15 +99,14 @@ Returns `200` with:
 | `subscribe_url` | New `http` or `https` feed URL with the new feed token. |
 | `webcal_url`    | Same URL with the `webcal` scheme.                      |
 
-To walk through a rotation, see
-[Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
+To walk through a rotation, see [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
 
 ### Set or clear the feed password
 
 `PUT /calendars/:id/feed-password`
 
-Turn HTTP Basic authentication on or off for the feed. Requires the calendar token, and
-the `:id` in the path must match that token's calendar.
+Turn HTTP Basic authentication on or off for the feed. Requires the calendar token, and the `:id` in
+the path must match that token's calendar.
 
 Request body:
 
@@ -130,15 +127,14 @@ To walk through the setup, see
 
 `GET /cal/:feed_token.ics`
 
-Fetch the calendar feed by its feed token. Returns `200` with `Content-Type:
-text/calendar` and the calendar in the iCalendar format defined by RFC 5545. The response
-carries a `Cache-Control: private, max-age=300` header, so clients can cache the feed for
-300 seconds.
+Fetch the calendar feed by its feed token. Returns `200` with `Content-Type: text/calendar` and the
+calendar in the iCalendar format defined by RFC 5545. The response carries a
+`Cache-Control: private, max-age=300` header, so clients can cache the feed for 300 seconds.
 
-If the calendar has a feed password, the feed requires HTTP Basic authentication. Send the
-password with any username. Without valid credentials, the server returns `401` with a
-`WWW-Authenticate: Basic` header. Calendar apps that support credentials in the URL accept
-the form `webcal://user:password@host/cal/:feed_token.ics`.
+If the calendar has a feed password, the feed requires HTTP Basic authentication. Send the password
+with any username. Without valid credentials, the server returns `401` with a
+`WWW-Authenticate: Basic` header. Calendar apps that support credentials in the URL accept the form
+`webcal://user:password@host/cal/:feed_token.ics`.
 
 ## Status codes
 
@@ -154,9 +150,8 @@ the form `webcal://user:password@host/cal/:feed_token.ics`.
 
 ## Dates
 
-Send dates in ISO 8601 with an explicit offset: `Z` for Coordinated Universal Time (UTC),
-or `+hh:mm`/`-hh:mm`. calfeed stores and serves every date in UTC, so
-`2026-09-10T19:00:00+02:00` becomes `20260910T170000Z` in the feed. calfeed rejects a
-date without an offset at write time with a `400`, because it would otherwise change
-meaning with the server's timezone. Any other unparseable date gets the same `400`, so a
-bad date never reaches the feed.
+Send dates in ISO 8601 with an explicit offset: `Z` for Coordinated Universal Time (UTC), or
+`+hh:mm`/`-hh:mm`. calfeed stores and serves every date in UTC, so `2026-09-10T19:00:00+02:00`
+becomes `20260910T170000Z` in the feed. calfeed rejects a date without an offset at write time with
+a `400`, because it would otherwise change meaning with the server's timezone. Any other unparseable
+date gets the same `400`, so a bad date never reaches the feed.
