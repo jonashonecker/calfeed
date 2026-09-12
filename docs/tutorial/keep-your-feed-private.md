@@ -76,8 +76,7 @@ Now read the old `subscribe_url` again. The leaked URL is dead:
 Read the new `subscribe_url` from the rotation response: your calendar is there. Notice what just
 happened: whoever holds the old URL lost access the moment you rotated, and nothing else about the
 calendar changed. Rotation also logs out every legitimate subscriber, so after a real rotation you
-send the new URL to the people who should keep reading. For the compact recipe, see
-[Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
+send the new URL to the people who should keep reading.
 
 ## Add a password
 
@@ -116,8 +115,8 @@ username you like when an app asks for one.
 
 A calendar app subscribes to a protected feed the same way you just did. Most apps ask for a
 username and password when you add the subscription. Apps that take credentials in the URL accept
-the form `webcal://calfeed:s3cret@localhost:8787/cal/...`. For the app-side steps, see
-[Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+the form `webcal://calfeed:s3cret@localhost:8787/cal/...`. For the steps on an iPhone, see
+[Subscribe on iOS](/docs/how-to/subscribe-on-ios.md).
 
 ## Remove the password again
 
@@ -140,5 +139,5 @@ invite back.
 
 - To understand the model behind the two levers, see
   [Feed privacy](/docs/explanation/feed-privacy.md).
-- For the day-to-day recipes, see [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md) and
-  [Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+- For the exact request and response contracts of both endpoints, see the
+  [API reference](/docs/reference/api.md).

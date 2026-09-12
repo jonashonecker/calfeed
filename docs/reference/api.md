@@ -103,7 +103,7 @@ Returns `200` with:
 | `subscribe_url` | New `http` or `https` feed URL with the new feed token. |
 | `webcal_url`    | Same URL with the `webcal` scheme.                      |
 
-To walk through a rotation, see [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
+To walk through a rotation, see [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
 
 ### Set or clear the feed password
 
@@ -124,8 +124,7 @@ Returns `200` with:
 | ----------- | ------------------------------------------------------------------ |
 | `protected` | `true` if the feed now requires a password, `false` if it doesn't. |
 
-To walk through the setup, see
-[Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+To walk through the setup, see [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
 
 ### Read the feed
 

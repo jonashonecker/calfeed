@@ -15,7 +15,7 @@ If you only have the `subscribe_url`, an `http://` or `https://` link, swap its 
 
 If the feed has a password, put the username and password in the URL, in the form
 `webcal://user:password@host/cal/<feed_token>.ics`. calfeed accepts any username. To set a feed
-password, see [Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+password, see the [API reference](/docs/reference/api.md).
 
 ## Open the link on the device
 

@@ -20,15 +20,15 @@ subscribe URL never exposes the ability to write events or manage the calendar.
 Subscribe URLs travel through chat messages, email, and sometimes a public repository, so treat any
 one as possible to leak. When a URL leaks, rotate the feed token: calfeed generates a new token, and
 the old URL stops resolving. Every subscriber has to re-subscribe with the new URL, which is the
-cost of cutting off whoever held the old one. See
-[Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
+cost of cutting off whoever held the old one. To try a rotation hands-on, see
+[Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
 
 ## A password adds real authentication
 
 For a feed where an unguessable URL isn't enough, set a feed password. The feed then requires HTTP
 Basic authentication: without the right password, the server answers `401` and won't return the
-calendar. This moves the feed from "hard to find" to "closed unless you have the password." See
-[Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
+calendar. This moves the feed from "hard to find" to "closed unless you have the password." For the
+endpoint contract, see the [API reference](/docs/reference/api.md).
 
 Send the password over HTTPS so it isn't readable in transit. Basic authentication puts the password
 in a request header on every fetch, so plain HTTP would expose it.

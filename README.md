@@ -20,8 +20,6 @@ HTTP Basic authentication.
 
 - [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md)
 - [Push events from a script](/docs/how-to/push-events-from-a-script.md)
-- [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md)
-- [Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md)
 - [Run the tests](/docs/how-to/run-the-tests.md)
 
 ## 🔍 Reference
