@@ -11,10 +11,10 @@ The server listens on the port from `PORT`, which defaults to `8787`. The exampl
 
 calfeed uses two kinds of Bearer token in the `Authorization` header.
 
-| Token | Set by | Grants |
-|---|---|---|
-| Administrator token | `CALFEED_ADMIN_TOKEN` | Creating calendars. |
-| Calendar token | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
+| Token               | Set by                              | Grants                                                                                             |
+| ------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating calendars.                                                                                |
+| Calendar token      | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
 
 The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable
 `feed_token` in the URL controls who can reach it. If the calendar has a feed password,
@@ -31,19 +31,19 @@ Create a calendar. Requires the administrator token.
 
 Request body:
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `name` | string | Yes | Display name of the calendar. |
+| Field  | Type   | Required | Description                   |
+| ------ | ------ | -------- | ----------------------------- |
+| `name` | string | Yes      | Display name of the calendar. |
 
 Returns `201` with:
 
-| Field | Description |
-|---|---|
-| `id` | Calendar identifier used with the calendar token to manage the calendar. |
-| `name` | The name you sent. |
-| `token` | Calendar token for writing and management. Keep it private. |
-| `subscribe_url` | `http` or `https` URL of the feed, containing the feed token. |
-| `webcal_url` | Same URL with the `webcal` scheme, for iOS. |
+| Field           | Description                                                              |
+| --------------- | ------------------------------------------------------------------------ |
+| `id`            | Calendar identifier used with the calendar token to manage the calendar. |
+| `name`          | The name you sent.                                                       |
+| `token`         | Calendar token for writing and management. Keep it private.              |
+| `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.            |
+| `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                              |
 
 ### Add or update an event
 
@@ -55,14 +55,14 @@ upsert.
 
 Request body:
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `summary` | string | Yes | Event title. |
-| `dtstart` | string | Yes | Start time in ISO 8601 with an explicit offset, such as `2026-09-10T17:00:00Z` or `2026-09-10T19:00:00+02:00`. |
-| `dtend` | string | No | End time, same format as `dtstart`. |
-| `uid` | string | No | Stable identifier. calfeed generates one if you omit it. Allowed characters are letters, digits, and `-` `_` `.` `@`. |
-| `description` | string | No | Longer text for the event. |
-| `location` | string | No | Where the event happens. |
+| Field         | Type   | Required | Description                                                                                                           |
+| ------------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `summary`     | string | Yes      | Event title.                                                                                                          |
+| `dtstart`     | string | Yes      | Start time in ISO 8601 with an explicit offset, such as `2026-09-10T17:00:00Z` or `2026-09-10T19:00:00+02:00`.        |
+| `dtend`       | string | No       | End time, same format as `dtstart`.                                                                                   |
+| `uid`         | string | No       | Stable identifier. calfeed generates one if you omit it. Allowed characters are letters, digits, and `-` `_` `.` `@`. |
+| `description` | string | No       | Longer text for the event.                                                                                            |
+| `location`    | string | No       | Where the event happens.                                                                                              |
 
 Returns `201` with `{ "id", "uid", "updated": false }` for a new event, or `200` with
 `{ "updated": true }` when you update an existing `uid`.
@@ -95,11 +95,11 @@ token replaces the old one, so the previous subscribe URL returns `404`.
 
 Returns `200` with:
 
-| Field | Description |
-|---|---|
-| `rotated` | Always `true` on success. |
+| Field           | Description                                             |
+| --------------- | ------------------------------------------------------- |
+| `rotated`       | Always `true` on success.                               |
 | `subscribe_url` | New `http` or `https` feed URL with the new feed token. |
-| `webcal_url` | Same URL with the `webcal` scheme. |
+| `webcal_url`    | Same URL with the `webcal` scheme.                      |
 
 To walk through a rotation, see
 [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).
@@ -113,14 +113,14 @@ the `:id` in the path must match that token's calendar.
 
 Request body:
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `password` | string or null | Yes | A non-empty string of at most 1024 characters turns on Basic authentication. `null` or `""` turns it off. Any other type returns `400`. |
+| Field      | Type           | Required | Description                                                                                                                             |
+| ---------- | -------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `password` | string or null | Yes      | A non-empty string of at most 1024 characters turns on Basic authentication. `null` or `""` turns it off. Any other type returns `400`. |
 
 Returns `200` with:
 
-| Field | Description |
-|---|---|
+| Field       | Description                                                        |
+| ----------- | ------------------------------------------------------------------ |
 | `protected` | `true` if the feed now requires a password, `false` if it doesn't. |
 
 To walk through the setup, see
@@ -142,15 +142,15 @@ the form `webcal://user:password@host/cal/:feed_token.ics`.
 
 ## Status codes
 
-| Code | Meaning |
-|---|---|
-| `200` | Success: event updated, event deleted, feed returned, token rotated, or password changed. |
-| `201` | The server created a calendar or a new event. |
-| `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a date or `uid` is invalid, or the body holds malformed JSON. |
+| Code  | Meaning                                                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `200` | Success: event updated, event deleted, feed returned, token rotated, or password changed.                                            |
+| `201` | The server created a calendar or a new event.                                                                                        |
+| `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a date or `uid` is invalid, or the body holds malformed JSON.   |
 | `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong. |
-| `404` | Unknown feed token, unknown calendar, unknown event on delete, or unknown route. |
-| `413` | The request body is larger than the 256&nbsp;KB limit. |
-| `500` | The server hit an unexpected error. |
+| `404` | Unknown feed token, unknown calendar, unknown event on delete, or unknown route.                                                     |
+| `413` | The request body is larger than the 256&nbsp;KB limit.                                                                               |
+| `500` | The server hit an unexpected error.                                                                                                  |
 
 ## Dates
 

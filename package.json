@@ -6,10 +6,15 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "./test/run.sh"
+    "test": "./test/run.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=22.13"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "3.9.6"
+  }
 }

@@ -44,11 +44,11 @@ and sit on a server you don't run, outside your reach.
 
 Given that, the levels build on each other rather than reaching perfect secrecy:
 
-| Level | Protection | Good for |
-|---|---|---|
-| Feed token | The URL is unguessable but public to anyone who holds it. | Casual privacy for everyday calendars. |
-| Rotation | Invalidates a leaked URL on demand. | Recovering after a URL gets out. |
-| Feed password | Requires Basic authentication to read the feed. | Feeds you want closed by default. |
+| Level         | Protection                                                | Good for                               |
+| ------------- | --------------------------------------------------------- | -------------------------------------- |
+| Feed token    | The URL is unguessable but public to anyone who holds it. | Casual privacy for everyday calendars. |
+| Rotation      | Invalidates a leaked URL on demand.                       | Recovering after a URL gets out.       |
+| Feed password | Requires Basic authentication to read the feed.           | Feeds you want closed by default.      |
 
 Basic authentication over HTTPS is the strongest protection a subscribable feed can offer.
 For events that must never reach a third-party server, a subscribable feed isn't the right

@@ -5,11 +5,11 @@ administrator token to a non-default value before the server starts.
 
 ## Environment variables
 
-| Variable | Description | Default |
-|---|---|---|
-| `CALFEED_ADMIN_TOKEN` | Bearer token that authorizes creating calendars. Required: the server refuses to start without it. | none |
-| `CALFEED_BASE_URL` | Base URL calfeed uses to build `subscribe_url` and `webcal_url`. | `http://localhost:8787` |
-| `PORT` | Port the server listens on. | `8787` |
+| Variable              | Description                                                                                        | Default                 |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ----------------------- |
+| `CALFEED_ADMIN_TOKEN` | Bearer token that authorizes creating calendars. Required: the server refuses to start without it. | none                    |
+| `CALFEED_BASE_URL`    | Base URL calfeed uses to build `subscribe_url` and `webcal_url`.                                   | `http://localhost:8787` |
+| `PORT`                | Port the server listens on.                                                                        | `8787`                  |
 
 ## The administrator token
 

@@ -55,18 +55,20 @@ export class SqliteStore {
   // Migration: a fresh database uses token_hash/feed_token_hash. Missing
   // columns get added; calendars without a feed_token_hash get one.
   _migrate() {
-    const cols = this.db.prepare(`PRAGMA table_info(calendars)`).all().map(c => c.name);
+    const cols = this.db
+      .prepare(`PRAGMA table_info(calendars)`)
+      .all()
+      .map((c) => c.name);
     if (!cols.includes('feed_token_hash')) {
       this.db.exec(`ALTER TABLE calendars ADD COLUMN feed_token_hash TEXT`);
     }
     if (!cols.includes('feed_password')) {
       this.db.exec(`ALTER TABLE calendars ADD COLUMN feed_password TEXT`);
     }
-    const missing = this.db.prepare(
-      `SELECT id FROM calendars WHERE feed_token_hash IS NULL`
-    ).all();
+    const missing = this.db.prepare(`SELECT id FROM calendars WHERE feed_token_hash IS NULL`).all();
     for (const row of missing) {
-      this.db.prepare(`UPDATE calendars SET feed_token_hash=? WHERE id=?`)
+      this.db
+        .prepare(`UPDATE calendars SET feed_token_hash=? WHERE id=?`)
         .run(hashToken(newFeedToken()), row.id);
     }
   }
@@ -76,9 +78,11 @@ export class SqliteStore {
     const token = randomBytes(24).toString('base64url');
     const feedToken = newFeedToken();
     // The row holds only the hashes; the plaintext values go to the client.
-    this.db.prepare(
-      'INSERT INTO calendars (id, name, token_hash, feed_token_hash, created_at) VALUES (?,?,?,?,?)'
-    ).run(id, name, hashToken(token), hashToken(feedToken), new Date().toISOString());
+    this.db
+      .prepare(
+        'INSERT INTO calendars (id, name, token_hash, feed_token_hash, created_at) VALUES (?,?,?,?,?)',
+      )
+      .run(id, name, hashToken(token), hashToken(feedToken), new Date().toISOString());
     return { id, name, token, feed_token: feedToken };
   }
 
@@ -90,21 +94,26 @@ export class SqliteStore {
   // incoming plaintext token and look it up against feed_token_hash.
   getCalendarByFeedToken(feedToken) {
     if (!feedToken) return null;
-    return this.db.prepare('SELECT * FROM calendars WHERE feed_token_hash=?')
-      .get(hashToken(feedToken)) ?? null;
+    return (
+      this.db
+        .prepare('SELECT * FROM calendars WHERE feed_token_hash=?')
+        .get(hashToken(feedToken)) ?? null
+    );
   }
 
   findCalendarByToken(token) {
     if (!token) return null;
-    return this.db.prepare('SELECT * FROM calendars WHERE token_hash=?')
-      .get(hashToken(token)) ?? null;
+    return (
+      this.db.prepare('SELECT * FROM calendars WHERE token_hash=?').get(hashToken(token)) ?? null
+    );
   }
 
   // Rotate the feed token: generates a new plaintext token, stores its hash,
   // and returns the PLAINTEXT token (server.js builds the subscribe URL from it).
   rotateFeedToken(id) {
     const feedToken = newFeedToken();
-    const r = this.db.prepare('UPDATE calendars SET feed_token_hash=? WHERE id=?')
+    const r = this.db
+      .prepare('UPDATE calendars SET feed_token_hash=? WHERE id=?')
       .run(hashToken(feedToken), id);
     return r.changes > 0 ? feedToken : null;
   }
@@ -118,8 +127,7 @@ export class SqliteStore {
       const hash = scryptSync(String(password), salt, 64);
       stored = `${salt.toString('base64')}:${hash.toString('base64')}`;
     }
-    const r = this.db.prepare('UPDATE calendars SET feed_password=? WHERE id=?')
-      .run(stored, id);
+    const r = this.db.prepare('UPDATE calendars SET feed_password=? WHERE id=?').run(stored, id);
     return r.changes > 0;
   }
 
@@ -127,34 +135,61 @@ export class SqliteStore {
     // ?? instead of ||: a falsy-but-valid uid must never be silently
     // replaced by a random one (that would break upsert and delete).
     const eventUid = uid ?? randomUUID();
-    const existing = this.db.prepare(
-      'SELECT id FROM events WHERE calendar_id=? AND uid=?'
-    ).get(calendarId, eventUid);
+    const existing = this.db
+      .prepare('SELECT id FROM events WHERE calendar_id=? AND uid=?')
+      .get(calendarId, eventUid);
 
     if (existing) {
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE events SET summary=?, description=?, location=?, dtstart=?, dtend=?
         WHERE calendar_id=? AND uid=?
-      `).run(summary, description ?? null, location ?? null, dtstart, dtend ?? null, calendarId, eventUid);
+      `,
+        )
+        .run(
+          summary,
+          description ?? null,
+          location ?? null,
+          dtstart,
+          dtend ?? null,
+          calendarId,
+          eventUid,
+        );
       return { id: existing.id, uid: eventUid, updated: true };
     }
     const id = randomUUID().slice(0, 12);
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT INTO events (id, calendar_id, uid, summary, description, location, dtstart, dtend, created_at)
       VALUES (?,?,?,?,?,?,?,?,?)
-    `).run(id, calendarId, eventUid, summary, description ?? null, location ?? null,
-           dtstart, dtend ?? null, new Date().toISOString());
+    `,
+      )
+      .run(
+        id,
+        calendarId,
+        eventUid,
+        summary,
+        description ?? null,
+        location ?? null,
+        dtstart,
+        dtend ?? null,
+        new Date().toISOString(),
+      );
     return { id, uid: eventUid, updated: false };
   }
 
   listEvents(calendarId) {
-    return this.db.prepare(
-      'SELECT * FROM events WHERE calendar_id=? ORDER BY dtstart'
-    ).all(calendarId);
+    return this.db
+      .prepare('SELECT * FROM events WHERE calendar_id=? ORDER BY dtstart')
+      .all(calendarId);
   }
 
   deleteEvent(calendarId, uid) {
-    const r = this.db.prepare('DELETE FROM events WHERE calendar_id=? AND uid=?').run(calendarId, uid);
+    const r = this.db
+      .prepare('DELETE FROM events WHERE calendar_id=? AND uid=?')
+      .run(calendarId, uid);
     return r.changes > 0;
   }
 }

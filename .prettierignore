@@ -1,0 +1,6 @@
+# Vendored Vale styles — not ours to reformat.
+.vale/
+# Local tool settings.
+.claude/
+# Large generated test fixture.
+test/fixtures/

@@ -38,7 +38,10 @@ function foldLine(line) {
 function toICalDate(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) throw new Error(`invalid date: ${iso}`);
-  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  return d
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
 }
 
 export function buildICal(calendar, events) {

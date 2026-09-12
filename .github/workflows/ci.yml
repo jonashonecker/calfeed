@@ -6,6 +6,23 @@ on:
   pull_request:
 
 jobs:
+  format:
+    name: Prettier check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
   blackbox:
     name: Blackbox API tests
     runs-on: ubuntu-latest
@@ -15,7 +32,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
       - name: Install Hurl
         run: |

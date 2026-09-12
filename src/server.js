@@ -173,9 +173,14 @@ export function createApp(store = new SqliteStore()) {
         if (cal.feed_password) {
           const creds = basicAuth(req);
           if (!creds || !(await verifyFeedPassword(cal.feed_password, creds.pass))) {
-            return send(res, 401, { error: 'authentication required' }, {
-              'WWW-Authenticate': 'Basic realm="calfeed"',
-            });
+            return send(
+              res,
+              401,
+              { error: 'authentication required' },
+              {
+                'WWW-Authenticate': 'Basic realm="calfeed"',
+              },
+            );
           }
         }
 
@@ -198,7 +203,10 @@ export function createApp(store = new SqliteStore()) {
         }
         const cal = store.createCalendar(body.name);
         return send(res, 201, {
-          id: cal.id, name: cal.name, token: cal.token, ...subscribeUrls(cal.feed_token),
+          id: cal.id,
+          name: cal.name,
+          token: cal.token,
+          ...subscribeUrls(cal.feed_token),
         });
       }
 
@@ -305,7 +313,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (!t || t === 'dev-admin-token' || t === 'change-me') {
     console.error(
       'FATAL: CALFEED_ADMIN_TOKEN must be set to a non-default value. ' +
-      'Refusing to start with a missing or well-known token.'
+        'Refusing to start with a missing or well-known token.',
     );
     process.exit(1);
   }

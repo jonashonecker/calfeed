@@ -2,7 +2,7 @@ services:
   calfeed:
     build: .
     ports:
-      - "8787:8787"
+      - '8787:8787'
     environment:
       # Set a strong admin token. Override in a .env file or your shell.
       CALFEED_ADMIN_TOKEN: ${CALFEED_ADMIN_TOKEN:-change-me}
