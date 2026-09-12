@@ -4,12 +4,9 @@
   "description": "Minimal CRUD backend that serves subscribable read-only iCal (.ics) feeds. Push events via token, subscribe on any calendar app.",
   "type": "module",
   "main": "src/server.js",
-  "bin": {
-    "calfeed": "./src/cli.js"
-  },
   "scripts": {
     "start": "node src/server.js",
-    "test": "./test/run.sh && ./test/cli.sh",
+    "test": "./test/run.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "docs:api": "node tools/api-docs.js"

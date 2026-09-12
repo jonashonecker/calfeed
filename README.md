@@ -29,7 +29,6 @@ HTTP Basic authentication.
 
 - [API reference](/docs/reference/api.md)
 - [OpenAPI description](/docs/reference/openapi.yaml)
-- [CLI reference](/docs/reference/cli.md)
 - [Configuration](/docs/reference/configuration.md)
 
 ## 💡 Explanation

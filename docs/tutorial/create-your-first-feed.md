@@ -8,8 +8,8 @@ calfeed you need for daily work.
 ## Before you start
 
 Install Node 22.13 or later, since calfeed uses the built-in `node:sqlite` module. calfeed has no
-other dependencies. Clone the calfeed repository and open a terminal in its root folder. You'll use
-the bundled [CLI](/docs/reference/cli.md) for every step, so there is nothing else to install.
+other dependencies. Clone the calfeed repository and open a terminal in its root folder. Make sure
+`curl` is available so you can talk to the server.
 
 ## Start the server
 
@@ -31,17 +31,22 @@ Only you can create calendars, so this command needs the administrator token. In
 terminal, ask the server for a new calendar named `Family`:
 
 ```bash
-CALFEED_ADMIN_TOKEN=my-secret-admin-token node src/cli.js calendar create Family
+curl -X POST http://localhost:8787/calendars \
+  -H "Authorization: Bearer my-secret-admin-token" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Family"}'
 ```
 
-The output should look like this, with your own values:
+The response should look like this, with your own values:
 
-```text
-id: 3f9a2b1c
-name: Family
-token: Yy8Qb...redacted...
-subscribe_url: http://localhost:8787/cal/9Xk3...feed-token....ics
-webcal_url: webcal://localhost:8787/cal/9Xk3...feed-token....ics
+```json
+{
+  "id": "3f9a2b1c",
+  "name": "Family",
+  "token": "Yy8Qb...redacted...",
+  "subscribe_url": "http://localhost:8787/cal/9Xk3...feed-token....ics",
+  "webcal_url": "webcal://localhost:8787/cal/9Xk3...feed-token....ics"
+}
 ```
 
 Notice that you received two different secrets. The `token` is the only credential that can write to
@@ -49,7 +54,7 @@ this calendar, so keep it private. The `subscribe_url` and `webcal_url` carry th
 feed token, which is what a calendar app subscribes to. To learn why each calendar has its own
 token, see [A token per calendar](/docs/explanation/token-per-calendar.md).
 
-Export the `token` from your output so the next commands can use it:
+Export the `token` from your response so the next commands can use it:
 
 ```bash
 export CALFEED_TOKEN=Yy8Qb...redacted...
@@ -62,19 +67,21 @@ Now push a first event into the calendar. Dates use ISO 8601 with an explicit of
 so the event can never shift with a server's timezone:
 
 ```bash
-node src/cli.js event push \
-  --summary "Dinner with Sam" \
-  --dtstart 2027-01-15T17:00:00Z \
-  --dtend 2027-01-15T19:00:00Z \
-  --location "Trattoria Rossi"
+curl -X POST http://localhost:8787/events \
+  -H "Authorization: Bearer $CALFEED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "summary": "Dinner with Sam",
+    "dtstart": "2027-01-15T17:00:00Z",
+    "dtend": "2027-01-15T19:00:00Z",
+    "location": "Trattoria Rossi"
+  }'
 ```
 
-The output confirms the stored event:
+The response confirms the stored event:
 
-```text
-id: a1b2c3d4e5f6
-uid: 9d1f2e3a-...
-updated: false
+```json
+{ "id": "a1b2c3d4e5f6", "uid": "9d1f2e3a-...", "updated": false }
 ```
 
 calfeed generated the `uid` because you didn't send one. To push events from a script and update
@@ -86,10 +93,10 @@ The feed itself needs no token, because that's what a calendar app subscribes to
 `subscribe_url` from the create-calendar step:
 
 ```bash
-node src/cli.js feed show http://localhost:8787/cal/9Xk3...feed-token....ics
+curl http://localhost:8787/cal/9Xk3...feed-token....ics
 ```
 
-The output is your calendar in the iCalendar format, and your event is in it:
+The response is your calendar in the iCalendar format, and your event is in it:
 
 ```text
 BEGIN:VCALENDAR
@@ -125,12 +132,15 @@ Jump to January 15, 2027 in the app. Your dinner with Sam is there, served from 
 With the calendar subscribed, push a second event the same way you pushed the first:
 
 ```bash
-node src/cli.js event push --summary "Team standup" --dtstart 2027-01-16T08:00:00Z
+curl -X POST http://localhost:8787/events \
+  -H "Authorization: Bearer $CALFEED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:00:00Z"}'
 ```
 
 The next time your calendar app refreshes the feed, the new event appears on January 16 without you
-touching the app. That's the whole loop: anything that can run the CLI, or send HTTP, can now put
-events on your calendar.
+touching the app. That's the whole loop: anything that can send HTTP can now put events on your
+calendar.
 
 ## Where to go next
 

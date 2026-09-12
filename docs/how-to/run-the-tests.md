@@ -47,9 +47,7 @@ hurl --test \
 
 `test/contract/` holds one contract test per endpoint, `test/scenarios/` one scenario test per
 cross-cutting property. For the reasoning behind that split, see
-[Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md). A third piece,
-`test/cli.sh`, smoke-tests the [CLI](/docs/reference/cli.md) with a full round trip, because Hurl
-can't drive a command-line tool.
+[Contract and scenario tests](/docs/explanation/contract-and-scenario-tests.md).
 
 - `contract/calendars.hurl`: the `POST /calendars` contract.
 - `contract/events.hurl`: the `POST /events` and `DELETE /events/:uid` contracts.
