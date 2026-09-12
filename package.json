@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "test": "./test/run.sh && ./test/cli.sh",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "docs:api": "npx --yes @redocly/cli preview-docs docs/reference/openapi.yaml"
   },
   "engines": {
     "node": ">=22.13"
