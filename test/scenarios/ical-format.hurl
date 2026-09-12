@@ -66,10 +66,11 @@ Authorization: Bearer {{cal_token}}
 HTTP 201
 
 # ── The feed renders all of them correctly ───────────────────────
+# The Content-Type header contract lives in contract/feed.hurl; this file
+# checks only the body.
 GET {{feed_url}}
 HTTP 200
 [Asserts]
-header "Content-Type" contains "text/calendar"
 # calendar name: comma and semicolon escaped in X-WR-CALNAME
 body contains "X-WR-CALNAME:iCal Checks\\, v2\\; draft"
 # escaping: comma, semicolon, backslash all backslash-escaped

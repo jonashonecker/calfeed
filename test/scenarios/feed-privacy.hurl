@@ -1,6 +1,8 @@
 # Scenario test: the feed privacy lifecycle. Rotation kills old URLs (the
 # feed rotates twice across this file), a password challenges via Basic
-# authentication, survives rotation, and null or "" removes it.
+# authentication and survives rotation, and removing it opens the feed
+# again. Field rules for the password endpoint live in
+# contract/feed-password.hurl.
 # Variables: base, admin_token
 
 # ── Set up a calendar to protect ──────────────────────────────────
@@ -40,14 +42,6 @@ HTTP 404
 
 GET {{new_feed}}
 HTTP 200
-
-# ── Enabling a password needs the calendar token ─────────────────
-PUT {{base}}/calendars/{{cal_id}}/feed-password
-Authorization: Bearer wrong-token
-{
-  "password": "s3cret"
-}
-HTTP 401
 
 # ── Enable Basic authentication on the feed ───────────────────────
 PUT {{base}}/calendars/{{cal_id}}/feed-password
@@ -107,28 +101,6 @@ PUT {{base}}/calendars/{{cal_id}}/feed-password
 Authorization: Bearer {{cal_token}}
 {
   "password": null
-}
-HTTP 200
-[Asserts]
-jsonpath "$.protected" == false
-
-GET {{rotated_feed}}
-HTTP 200
-
-# ── An empty password also removes protection ────────────────────
-PUT {{base}}/calendars/{{cal_id}}/feed-password
-Authorization: Bearer {{cal_token}}
-{
-  "password": "temporary"
-}
-HTTP 200
-[Asserts]
-jsonpath "$.protected" == true
-
-PUT {{base}}/calendars/{{cal_id}}/feed-password
-Authorization: Bearer {{cal_token}}
-{
-  "password": ""
 }
 HTTP 200
 [Asserts]

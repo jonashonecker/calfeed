@@ -22,6 +22,14 @@ PUT {{base}}/calendars/{{cal_id}}/feed-password
 }
 HTTP 401
 
+# ── A wrong token is unauthorized too ─────────────────────────────
+PUT {{base}}/calendars/{{cal_id}}/feed-password
+Authorization: Bearer wrong-token
+{
+  "password": "s3cret"
+}
+HTTP 401
+
 # ── A string password protects the feed ───────────────────────────
 PUT {{base}}/calendars/{{cal_id}}/feed-password
 Authorization: Bearer {{cal_token}}
@@ -69,6 +77,28 @@ PUT {{base}}/calendars/{{cal_id}}/feed-password
 Authorization: Bearer {{cal_token}}
 {
   "password": null
+}
+HTTP 200
+[Asserts]
+jsonpath "$.protected" == false
+
+GET {{feed_url}}
+HTTP 200
+
+# ── An empty string removes protection like null ─────────────────
+PUT {{base}}/calendars/{{cal_id}}/feed-password
+Authorization: Bearer {{cal_token}}
+{
+  "password": "temporary"
+}
+HTTP 200
+[Asserts]
+jsonpath "$.protected" == true
+
+PUT {{base}}/calendars/{{cal_id}}/feed-password
+Authorization: Bearer {{cal_token}}
+{
+  "password": ""
 }
 HTTP 200
 [Asserts]
