@@ -19,7 +19,6 @@ HTTP Basic authentication.
 > Practical step-by-step guides for the more experienced user
 
 - [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md)
-- [Push events from a script](/docs/how-to/push-events-from-a-script.md)
 - [Run the tests](/docs/how-to/run-the-tests.md)
 
 ## 🔍 Reference

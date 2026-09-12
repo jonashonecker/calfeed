@@ -29,5 +29,5 @@ small because it only has to generate a correct feed, not mediate edits from man
 ## When you want to change an event
 
 To change what subscribers see, push the update from the source with the same `uid`, or delete the
-event. See [Push events from a script](/docs/how-to/push-events-from-a-script.md). The change flows
-to every subscriber on their next refresh.
+event. The tutorial [Create your first feed](/docs/tutorial/create-your-first-feed.md) walks through
+exactly that loop. The change flows to every subscriber on their next refresh.

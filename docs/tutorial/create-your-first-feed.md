@@ -84,8 +84,8 @@ The response confirms the stored event:
 { "id": "a1b2c3d4e5f6", "uid": "9d1f2e3a-...", "updated": false }
 ```
 
-calfeed generated the `uid` because you didn't send one. To push events from a script and update
-them in place later, see [Push events from a script](/docs/how-to/push-events-from-a-script.md).
+calfeed generated the `uid` because you didn't send one. In a moment you'll set a `uid` yourself and
+see what that unlocks.
 
 ## Read the feed
 
@@ -142,9 +142,33 @@ curl -X POST http://localhost:8787/events \
 The next time your calendar app refreshes the feed, the new event appears on January 16 without you
 touching the app.
 
+## Move the event
+
+The standup shifts to half past eight. Push the same `uid` again with the new time. calfeed keys
+events on `uid` within a calendar, so this updates the existing event instead of creating a
+duplicate:
+
+```bash
+curl -X POST http://localhost:8787/events \
+  -H "Authorization: Bearer $CALFEED_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:30:00Z","uid":"standup-1"}'
+```
+
+This time the response reports an update:
+
+```json
+{ "id": "b7c8d9e0f1a2", "uid": "standup-1", "updated": true }
+```
+
+Re-pushing with a stable `uid` is safe to repeat: a script can push its current state as often as it
+likes without ever duplicating events. That's the whole pattern behind automating a feed. To
+understand why calfeed works this way, see
+[Why read-only feeds](/docs/explanation/why-read-only-feeds.md).
+
 ## Delete an event
 
-The standup got cancelled. Delete the event by the `uid` you gave it:
+The standup got cancelled after all. Delete the event by its `uid`:
 
 ```bash
 curl -X DELETE http://localhost:8787/events/standup-1 \
@@ -163,9 +187,8 @@ them off again.
 
 ## Where to go next
 
-You created a calendar, pushed and deleted events, and subscribed to the feed. From here:
+You created a calendar, pushed, moved, and deleted events, and subscribed to the feed. From here:
 
 - Continue with the second tutorial and learn the privacy model by using it:
   [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
-- Automate pushes from your own tools:
-  [Push events from a script](/docs/how-to/push-events-from-a-script.md).
+- Everything a script needs to automate your feed is in the [API reference](/docs/reference/api.md).

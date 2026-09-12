@@ -42,7 +42,7 @@ iOS refreshes subscribed calendars on its own schedule. To set the interval, go 
 ## Related
 
 - To push events to the feed, read
-  [Push events from a script](/docs/how-to/push-events-from-a-script.md).
+  [Create your first feed](/docs/tutorial/create-your-first-feed.md).
 - To learn why the feed stays read-only, read
   [Why read-only feeds](/docs/explanation/why-read-only-feeds.md).
 - To understand how feed tokens and passwords protect a feed, read
