@@ -129,25 +129,43 @@ Jump to January 15, 2027 in the app. Your dinner with Sam is there, served from 
 
 ## Push another event
 
-With the calendar subscribed, push a second event the same way you pushed the first:
+With the calendar subscribed, push a second event. This time, set the `uid` yourself, so you can
+address the event again later:
 
 ```bash
 curl -X POST http://localhost:8787/events \
   -H "Authorization: Bearer $CALFEED_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:00:00Z"}'
+  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:00:00Z","uid":"standup-1"}'
 ```
 
 The next time your calendar app refreshes the feed, the new event appears on January 16 without you
-touching the app. That's the whole loop: anything that can send HTTP can now put events on your
-calendar.
+touching the app.
+
+## Delete an event
+
+The standup got cancelled. Delete the event by the `uid` you gave it:
+
+```bash
+curl -X DELETE http://localhost:8787/events/standup-1 \
+  -H "Authorization: Bearer $CALFEED_TOKEN"
+```
+
+The response confirms the deletion:
+
+```json
+{ "deleted": true }
+```
+
+Refresh your calendar app or read the feed again: the standup has vanished and the dinner remains.
+That's the whole loop. Anything that can send HTTP can now put events on your calendar, and take
+them off again.
 
 ## Where to go next
 
-You created a calendar, pushed events, read the feed, and subscribed to it. From here:
+You created a calendar, pushed and deleted events, and subscribed to the feed. From here:
 
+- Continue with the second tutorial and learn the privacy model by using it:
+  [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
 - Automate pushes from your own tools:
   [Push events from a script](/docs/how-to/push-events-from-a-script.md).
-- Protect the feed before sharing its URL:
-  [Protect a feed with a password](/docs/how-to/protect-a-feed-with-a-password.md).
-- Replace a leaked URL: [Rotate a feed token](/docs/how-to/rotate-a-feed-token.md).

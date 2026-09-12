@@ -12,6 +12,7 @@ HTTP Basic authentication.
 > Start here as a new user
 
 - [Create your first feed](/docs/tutorial/create-your-first-feed.md)
+- [Keep your feed private](/docs/tutorial/keep-your-feed-private.md)
 
 ## 🔧 How-to
 
