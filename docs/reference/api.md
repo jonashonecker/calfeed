@@ -4,8 +4,8 @@ calfeed exposes a small HTTP API. An administrator creates calendars. Clients pu
 events, and calendar apps read the feed.
 
 A machine-readable [OpenAPI description](/docs/reference/openapi.yaml) of the same contract sits
-next to this page. Load it into Swagger UI, render it with a documentation viewer, or generate a
-client from it.
+next to this page. Run `npm run docs:api` to browse it in Swagger UI on `localhost:8080`, or
+generate a client from it.
 
 ## Base URL
 

@@ -20,6 +20,7 @@ iCalendar
 ISO 8601
 libuv
 multibyte
+npm
 plaintext
 randomBytes
 readJson

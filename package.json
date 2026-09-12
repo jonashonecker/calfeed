@@ -12,7 +12,7 @@
     "test": "./test/run.sh && ./test/cli.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docs:api": "npx --yes @redocly/cli@1 preview-docs docs/reference/openapi.yaml"
+    "docs:api": "node tools/api-docs.js"
   },
   "engines": {
     "node": ">=22.13"
