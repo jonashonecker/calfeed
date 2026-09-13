@@ -219,7 +219,9 @@ export function createApp(store = new SqliteStore()) {
     const started = process.hrtime.bigint();
     res.on('finish', () => {
       const ms = (Number(process.hrtime.bigint() - started) / 1e6).toFixed(1);
-      console.log(`${req.method} ${redactForLog(req.url)} ${res.statusCode} ${ms}ms`);
+      console.log(
+        `${req.method.padEnd(6)} | ${res.statusCode} | ${`${ms}ms`.padStart(8)} | ${redactForLog(req.url)}`,
+      );
     });
     try {
       const url = new URL(req.url, BASE_URL);

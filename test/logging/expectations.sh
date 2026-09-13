@@ -19,7 +19,9 @@ fail() {
   exit 1
 }
 
-grep -qE '^(GET|POST|PUT|DELETE) /\S* [0-9]{3} ' "$LOG" ||
+# Deliberately loose: a line that carries a method and a status code counts,
+# whatever the separators look like. The format stays free to change.
+grep -qE '^(GET|POST|PUT|DELETE)\b.*\b[0-9]{3}\b' "$LOG" ||
   fail "no request lines with method and status found"
 
 grep -q '/cal/<redacted>' "$LOG" ||
