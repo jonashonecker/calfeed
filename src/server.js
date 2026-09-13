@@ -282,6 +282,22 @@ export function createApp(store = new SqliteStore()) {
         return send(res, 200, { protected: pw !== null });
       }
 
+      // GET /events: a client lists its calendar's events (calendar token)
+      if (req.method === 'GET' && path === '/events') {
+        const cal = requireCalendar(req, res);
+        if (!cal) return;
+        // Only the public fields leave the store; internal columns stay internal.
+        const events = store.listEvents(cal.id).map((e) => ({
+          uid: e.uid,
+          summary: e.summary,
+          description: e.description,
+          location: e.location,
+          dtstart: e.dtstart,
+          dtend: e.dtend,
+        }));
+        return send(res, 200, { events });
+      }
+
       // POST /events: a client creates an event (calendar token)
       if (req.method === 'POST' && path === '/events') {
         const cal = requireCalendar(req, res);

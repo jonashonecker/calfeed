@@ -80,6 +80,14 @@ body contains "SUMMARY:B own meeting"
 body not contains "SUMMARY:A private meeting"
 body split "BEGIN:VEVENT" count == 2
 
+# ── B's event list shows only B's own events ─────────────────────
+GET {{base}}/events
+Authorization: Bearer {{b_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.events" count == 1
+jsonpath "$.events[0].summary" == "B own meeting"
+
 # ── A's feed is unchanged, still A's own event ───────────────────
 GET {{a_feed}}
 HTTP 200

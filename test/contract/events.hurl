@@ -40,9 +40,9 @@ Authorization: Bearer
 }
 HTTP 401
 
-# ── There is no GET on /events ────────────────────────────────────
+# ── Listing events needs a valid calendar token ───────────────────
 GET {{base}}/events
-HTTP 404
+HTTP 401
 
 # ── summary and dtstart are required ──────────────────────────────
 POST {{base}}/events
@@ -80,6 +80,19 @@ Authorization: Bearer {{cal_token}}
 HTTP 400
 [Asserts]
 jsonpath "$.error" == "uid is assigned by the server"
+
+# ── GET /events lists the calendar, public fields only ───────────
+GET {{base}}/events
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.events" count == 1
+jsonpath "$.events[0].uid" == "{{first_uid}}"
+jsonpath "$.events[0].summary" == "First event"
+jsonpath "$.events[0].dtstart" == "2026-09-11T09:00:00.000Z"
+# internal columns stay internal
+jsonpath "$.events[0].calendar_id" not exists
+jsonpath "$.events[0].created_at" not exists
 
 # ── Field types are enforced, not only presence ──────────────────
 POST {{base}}/events
@@ -238,6 +251,16 @@ body contains "DTSTART:20260911T100000Z"
 # three events: first (moved), offset input, under the limit
 body split "BEGIN:VEVENT" count == 4
 
+# ── The list is sorted by dtstart, like the feed ──────────────────
+GET {{base}}/events
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.events" count == 3
+jsonpath "$.events[0].summary" == "First event (moved)"
+jsonpath "$.events[1].summary" == "Under the limit"
+jsonpath "$.events[2].summary" == "Offset input"
+
 # ── PUT on an unknown uid is not found ────────────────────────────
 PUT {{base}}/events/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{cal_token}}
@@ -298,3 +321,41 @@ jsonpath "$.deleted" == false
 DELETE {{base}}/events/%zz
 Authorization: Bearer {{cal_token}}
 HTTP 400
+
+# ── A retry duplicate heals through the list ─────────────────────
+# POST is not idempotent: the same body twice creates two events. The
+# list is the recovery path — find the extra one and delete it.
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Retried push",
+  "dtstart": "2026-09-20T09:00:00Z"
+}
+HTTP 201
+
+POST {{base}}/events
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Retried push",
+  "dtstart": "2026-09-20T09:00:00Z"
+}
+HTTP 201
+[Captures]
+dup_uid: jsonpath "$.uid"
+
+GET {{base}}/events
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Asserts]
+# first (moved) + under the limit + two copies of the retried push
+jsonpath "$.events" count == 4
+
+DELETE {{base}}/events/{{dup_uid}}
+Authorization: Bearer {{cal_token}}
+HTTP 200
+
+GET {{base}}/events
+Authorization: Bearer {{cal_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.events" count == 3
