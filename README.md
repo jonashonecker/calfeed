@@ -26,7 +26,6 @@ HTTP Basic authentication.
 > Technical reference material
 
 - [API reference](/docs/reference/api.md)
-- [OpenAPI description](/docs/reference/openapi.yaml)
 - [Configuration](/docs/reference/configuration.md)
 
 ## 💡 Explanation
