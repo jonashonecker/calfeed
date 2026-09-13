@@ -90,13 +90,10 @@ boot.
 ## Set up HTTPS in front
 
 Caddy terminates HTTPS with certificates it obtains and renews automatically, and it redirects HTTP
-to HTTPS, which also keeps `webcal://` clients working. Install it from the official repository:
+to HTTPS, which also keeps `webcal://` clients working. Debian and Ubuntu ship it:
 
 ```bash
-apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-apt-get update && apt-get install -y caddy
+apt-get install -y caddy
 ```
 
 Replace `/etc/caddy/Caddyfile` with:
