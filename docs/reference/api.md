@@ -3,9 +3,8 @@
 calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete
 events, and calendar apps read the feed.
 
-To explore the API interactively, open the `bruno/` folder in [Bruno](https://www.usebruno.com): one
-request per endpoint, environments for local and production, and the create requests save tokens and
-identifiers into environment variables for the requests that follow.
+To try the endpoints interactively, use the Bruno collection in the repository: see
+[Explore the API with Bruno](/docs/how-to/explore-the-api-with-bruno.md).
 
 ## Base URL
 

@@ -252,5 +252,6 @@ cleaned up after yourself. From here:
 - Continue with the second tutorial and learn the privacy model by using it:
   [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
 - Everything a script needs to automate your feed is in the [API reference](/docs/reference/api.md).
-- For day-to-day work without curl, open the `bruno/` folder in [Bruno](https://www.usebruno.com):
-  the collection remembers tokens and identifiers for you.
+- For day-to-day work without curl, see
+  [Explore the API with Bruno](/docs/how-to/explore-the-api-with-bruno.md): the collection remembers
+  tokens and identifiers for you.
