@@ -56,6 +56,8 @@ cross-cutting property. For the reasoning behind that split, see
 - `scenarios/feed-privacy.hurl`: rotation and password lifecycle.
 - `scenarios/isolation.hurl`: cross-tenant isolation between calendars.
 - `scenarios/ical-format.hurl`: iCal escaping, line folding, UTF-8, ordering, and `DTEND`.
+- `logging/expectations.sh`: the log expectations. Every request logs one line with method and
+  status, feed paths appear redacted, and no token or event content ever reaches the log.
 
 ## Continuous integration
 

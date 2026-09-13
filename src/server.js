@@ -35,6 +35,13 @@ const MAX_PASSWORD_LENGTH = 1024;
 // Offset-less strings would silently shift with the server's timezone.
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
 
+// Logs never carry secrets: the feed token lives in the URL path, so /cal/
+// paths get redacted wholesale. Bodies and headers stay out of the log
+// entirely, which also keeps calendar content (summaries) private.
+function redactForLog(url) {
+  return String(url).startsWith('/cal/') ? '/cal/<redacted>' : String(url).split('?')[0];
+}
+
 // Returns the canonical ISO-UTC form of a date input, or null if the input
 // isn't an ISO 8601 string with an explicit offset. Storing the canonical
 // form keeps rendering timezone-independent and the dtstart sort correct.
@@ -207,6 +214,13 @@ export function createApp(store = new SqliteStore()) {
   }
 
   const server = createServer(async (req, res) => {
+    // One line per handled request, for monitoring through the journal. The
+    // journal adds timestamps; the line itself stays free of secrets.
+    const started = process.hrtime.bigint();
+    res.on('finish', () => {
+      const ms = (Number(process.hrtime.bigint() - started) / 1e6).toFixed(1);
+      console.log(`${req.method} ${redactForLog(req.url)} ${res.statusCode} ${ms}ms`);
+    });
     try {
       const url = new URL(req.url, BASE_URL);
       const path = url.pathname;

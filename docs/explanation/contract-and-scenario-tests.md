@@ -39,6 +39,15 @@ rebuild the setup several times.
 - `scenarios/ical-format.hurl` checks the quality of the iCal output: escaping, folding, UTF-8,
   ordering, `DTEND`.
 
+## A third kind: expectations outside HTTP
+
+Some expectations aren't reachable over HTTP at all. calfeed must log every request for monitoring,
+and those logs must never contain a feed token or calendar content, because that's part of the
+privacy model. Hurl can't see a process's output, so `test/logging/expectations.sh` checks the
+captured server log after the suite ran. It pins the properties, not a format: a rebuild may log
+however it likes, as long as every request produces a line with method and status and no secret ever
+appears.
+
 ## Where a new test belongs
 
 The rule of thumb:

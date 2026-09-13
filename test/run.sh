@@ -13,19 +13,21 @@ PORT="${PORT:-8799}"
 BASE="http://localhost:${PORT}"
 ADMIN_TOKEN="blackbox-admin-token"
 DB="$(mktemp -u /tmp/calfeed-test-XXXXXX.db)"
+SERVER_LOG="$(mktemp /tmp/calfeed-test-XXXXXX.log)"
 
 cleanup() {
   [ -n "${SERVER_PID:-}" ] && kill "$SERVER_PID" 2>/dev/null || true
-  rm -f "$DB"
+  rm -f "$DB" "$SERVER_LOG"
 }
 trap cleanup EXIT
 
-# Start the server with a throwaway database.
+# Start the server with a throwaway database. Its output goes to a file:
+# the log expectations in logging/expectations.sh check it afterwards.
 CALFEED_DB="$DB" \
 CALFEED_ADMIN_TOKEN="$ADMIN_TOKEN" \
 CALFEED_BASE_URL="$BASE" \
 PORT="$PORT" \
-  node "$ROOT/src/server.js" &
+  node "$ROOT/src/server.js" >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 
 # Wait until the server answers (max ~5s). Also check our own process is
@@ -53,3 +55,6 @@ hurl --test \
   --variable "base=$BASE" \
   --variable "admin_token=$ADMIN_TOKEN" \
   "$HERE"/contract/*.hurl "$HERE"/scenarios/*.hurl
+
+# Third kind of test: the log expectations, checked on the captured output.
+"$HERE"/logging/expectations.sh "$SERVER_LOG"
