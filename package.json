@@ -8,8 +8,7 @@
     "start": "node src/server.js",
     "test": "./test/run.sh",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "docs:api": "node tools/api-docs.js"
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=22.13"
