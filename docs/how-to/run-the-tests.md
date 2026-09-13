@@ -60,7 +60,7 @@ cross-cutting property. For the reasoning behind that split, see
 ## Continuous integration
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs the same suite on every push and pull
-request, plus a Docker build with a container smoke test.
+request.
 
 ## Related
 
