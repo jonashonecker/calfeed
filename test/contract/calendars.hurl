@@ -38,6 +38,28 @@ jsonpath "$.webcal_url" startsWith "webcal://"
 [Captures]
 cal_token: jsonpath "$.token"
 
+# ── Listing calendars needs the admin token ──────────────────────
+GET {{base}}/calendars
+HTTP 401
+
+# ── A calendar token cannot list calendars ───────────────────────
+GET {{base}}/calendars
+Authorization: Bearer {{cal_token}}
+HTTP 401
+
+# ── The list shows id, name, and created_at — never secrets ──────
+GET {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.calendars[*].name" includes "Calendars Contract"
+jsonpath "$.calendars[0].id" exists
+jsonpath "$.calendars[0].created_at" exists
+jsonpath "$.calendars[0].token" not exists
+jsonpath "$.calendars[0].token_hash" not exists
+jsonpath "$.calendars[0].feed_token_hash" not exists
+jsonpath "$.calendars[0].feed_password" not exists
+
 # ── Missing name is rejected ──────────────────────────────────────
 POST {{base}}/calendars
 Authorization: Bearer {{admin_token}}
@@ -153,3 +175,11 @@ Authorization: Bearer {{admin_token}}
 HTTP 404
 [Asserts]
 jsonpath "$.deleted" == false
+
+# ── The list reflects the deletion ────────────────────────────────
+GET {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.calendars[*].name" not includes "Doomed"
+jsonpath "$.calendars[*].name" includes "Survivor"

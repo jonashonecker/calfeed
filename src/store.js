@@ -134,6 +134,13 @@ export class SqliteStore {
 
   // The feed resolves through the feed_token, not the internal id. Hash the
   // incoming plaintext token and look it up against feed_token_hash.
+  // Lists calendars for the administrator. Selects only the public columns:
+  // the hashes stay in the database, and the plaintext secrets never
+  // existed here in the first place.
+  listCalendars() {
+    return this.db.prepare('SELECT id, name, created_at FROM calendars ORDER BY created_at').all();
+  }
+
   // Deletes a calendar and its events in one transaction; the feed token
   // hash goes with the row, so the feed URL dies immediately.
   deleteCalendar(id) {

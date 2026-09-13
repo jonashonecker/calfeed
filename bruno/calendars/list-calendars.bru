@@ -1,0 +1,20 @@
+meta {
+  name: List calendars
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/calendars
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+docs {
+  Lists all calendars (administrator token): id, name, and created_at.
+  Tokens exist only as hashes on the server, so they never appear here.
+}

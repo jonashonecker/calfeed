@@ -17,7 +17,7 @@ calfeed uses two kinds of Bearer token in the `Authorization` header.
 
 | Token               | Set by                              | Grants                                                                                             |
 | ------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating and deleting calendars.                                                                   |
+| Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating, listing, and deleting calendars.                                                         |
 | Calendar token      | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
 
 The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable `feed_token` in
@@ -47,6 +47,18 @@ Returns `201` with:
 | `token`         | Calendar token for writing and management. Keep it private: it appears only in this response and is never shown again. |
 | `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.                                                          |
 | `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                                                                            |
+
+### List calendars
+
+`GET /calendars`
+
+List all calendars, sorted by creation time. Requires the administrator token.
+
+Returns `200` with `{ "calendars": [ ... ] }`, where each entry carries `id`, `name`, and
+`created_at`, and nothing else. Tokens and subscribe URLs exist only as hashes on the server, so no
+listing can include them. See
+[Why calfeed never stores tokens](/docs/explanation/why-calfeed-never-stores-tokens.md). Use the
+list to find calendars to delete, or to spot ones whose tokens you lost.
 
 ### Delete a calendar
 

@@ -1,6 +1,7 @@
 /**
  * The calfeed HTTP server.
  * Endpoints:
+ *   GET    /calendars                                  → list calendars (administrator token)
  *   POST   /calendars                  {name}          → create a calendar (administrator token)
  *   DELETE /calendars/:id                              → delete a calendar (administrator token)
  *   GET    /events                                     → list events (calendar token)
@@ -255,6 +256,16 @@ export function createApp(store = new SqliteStore()) {
           token: cal.token,
           ...subscribeUrls(cal.feed_token),
         });
+      }
+
+      // GET /calendars: the administrator lists the calendars. Only id,
+      // name, and created_at: tokens exist solely as hashes, so the server
+      // couldn't include them even if it wanted to.
+      if (req.method === 'GET' && path === '/calendars') {
+        if (!ADMIN_TOKEN || !safeEqual(bearer(req) ?? '', ADMIN_TOKEN)) {
+          return send(res, 401, { error: 'admin token required' });
+        }
+        return send(res, 200, { calendars: store.listCalendars() });
       }
 
       // DELETE /calendars/:id: the administrator deletes a calendar, its
