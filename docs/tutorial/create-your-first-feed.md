@@ -242,6 +242,19 @@ The response confirms it:
 { "deleted": true }
 ```
 
+To see the server empty again, list the calendars:
+
+```bash
+curl http://localhost:8787/calendars \
+  -H "Authorization: Bearer my-secret-admin-token"
+```
+
+The response shows an empty list:
+
+```json
+{ "calendars": [] }
+```
+
 The feed URL died with the calendar, so also remove the subscription from your calendar app.
 
 ## Where to go next
