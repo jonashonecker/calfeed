@@ -81,11 +81,11 @@ curl -X POST http://localhost:8787/events \
 The response confirms the stored event:
 
 ```json
-{ "id": "a1b2c3d4e5f6", "uid": "9d1f2e3a-...", "updated": false }
+{ "uid": "9d1f2e3a-..." }
 ```
 
-calfeed generated the `uid` because you didn't send one. In a moment you'll set a `uid` yourself and
-see what that unlocks.
+The `uid` is the event's identifier: calfeed assigns it once, and you need it to update or delete
+the event later. You'll use it in a moment.
 
 ## Read the feed
 
@@ -106,7 +106,7 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:Family
 BEGIN:VEVENT
-UID:9d1f2e3a-...@calfeed
+UID:9d1f2e3a-...
 DTSTAMP:...
 DTSTART:20270115T170000Z
 DTEND:20270115T190000Z
@@ -129,14 +129,19 @@ Jump to January 15, 2027 in the app. Your dinner with Sam is there, served from 
 
 ## Push another event
 
-With the calendar subscribed, push a second event. This time, set the `uid` yourself, so you can
-address the event again later:
+With the calendar subscribed, push a second event:
 
 ```bash
 curl -X POST http://localhost:8787/events \
   -H "Authorization: Bearer $CALFEED_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:00:00Z","uid":"standup-1"}'
+  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:00:00Z"}'
+```
+
+This time, keep the `uid` from the response. Export it, like you exported the token:
+
+```bash
+export STANDUP_UID=9f091bf8-...
 ```
 
 The next time your calendar app refreshes the feed, the new event appears on January 16 without you
@@ -144,26 +149,25 @@ touching the app.
 
 ## Move the event
 
-The standup shifts to half past eight. Push the same `uid` again with the new time. calfeed keys
-events on `uid` within a calendar, so this updates the existing event instead of creating a
-duplicate:
+The standup shifts to half past eight. Send the new state with `PUT` to the event's `uid`:
 
 ```bash
-curl -X POST http://localhost:8787/events \
+curl -X PUT http://localhost:8787/events/$STANDUP_UID \
   -H "Authorization: Bearer $CALFEED_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:30:00Z","uid":"standup-1"}'
+  -d '{"summary":"Team standup","dtstart":"2027-01-16T08:30:00Z"}'
 ```
 
-This time the response reports an update:
+The response returns the same `uid`, because it never changes:
 
 ```json
-{ "id": "b7c8d9e0f1a2", "uid": "standup-1", "updated": true }
+{ "uid": "9f091bf8-..." }
 ```
 
-Re-pushing with a stable `uid` is safe to repeat: a script can push its current state as often as it
-likes without ever duplicating events. That's the whole pattern behind automating a feed. To
-understand why calfeed works this way, see
+A `PUT` replaces the event's data while the `uid` stays stable, so the feed updates in place instead
+of growing a duplicate, and your calendar app moves the existing entry. That's the whole pattern
+behind automating a feed: create once, keep the `uid`, send the current state whenever it changes.
+To understand why calfeed works this way, see
 [Why read-only feeds](/docs/explanation/why-read-only-feeds.md).
 
 ## Delete an event
@@ -171,7 +175,7 @@ understand why calfeed works this way, see
 The standup got cancelled after all. Delete the event by its `uid`:
 
 ```bash
-curl -X DELETE http://localhost:8787/events/standup-1 \
+curl -X DELETE http://localhost:8787/events/$STANDUP_UID \
   -H "Authorization: Bearer $CALFEED_TOKEN"
 ```
 

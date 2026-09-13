@@ -13,11 +13,12 @@ on their phone and drift out of sync with the source.
 
 ## The feed always matches the source
 
-When the writer pushes an event, it uses a stable `uid`. Re-pushing the same `uid` updates the event
-in place instead of creating a duplicate, so the feed always reflects the current state of the
-source. If the feed were editable, an app could hold a stale or conflicting copy, and you'd need to
-reconcile two versions of the same event. Read-only avoids that problem: the source pushes, and
-every subscriber converges on the same view.
+Every event carries a `uid` that calfeed assigns at creation and never changes. The writer updates
+an event with a `PUT` to that `uid`, which replaces the event's data in place instead of creating a
+duplicate, so the feed always reflects the current state of the source. If the feed were editable,
+an app could hold a stale or conflicting copy, and you'd need to reconcile two versions of the same
+event. Read-only avoids that problem: the source writes, and every subscriber converges on the same
+view.
 
 ## Subscribing is simple and standard
 
@@ -28,6 +29,6 @@ small because it only has to generate a correct feed, not mediate edits from man
 
 ## When you want to change an event
 
-To change what subscribers see, push the update from the source with the same `uid`, or delete the
+To change what subscribers see, send a `PUT` with the event's `uid` from the source, or delete the
 event. The tutorial [Create your first feed](/docs/tutorial/create-your-first-feed.md) walks through
 exactly that loop. The change flows to every subscriber on their next refresh.

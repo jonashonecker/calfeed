@@ -49,34 +49,54 @@ Returns `201` with:
 | `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.            |
 | `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                              |
 
-### Add or update an event
+### Create an event
 
 `POST /events`
 
-Add or update an event. Requires the calendar token. calfeed keys events on `uid` within a calendar:
-a repeated `uid` updates the existing event in place, an operation known as an upsert.
+Create an event. Requires the calendar token. calfeed assigns the event's `uid`: a random,
+universally unique identifier that stays stable for the event's whole life. It identifies the event
+in this API and on the feed's `UID` line, where RFC 5545 requires that stability so subscribed apps
+recognize updates as updates. Store the `uid`: updating and deleting go through it.
 
 Request body:
 
-| Field         | Type   | Required | Description                                                                                                           |
-| ------------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------- |
-| `summary`     | string | Yes      | Event title.                                                                                                          |
-| `dtstart`     | string | Yes      | Start time in ISO 8601 with an explicit offset, such as `2026-09-10T17:00:00Z` or `2026-09-10T19:00:00+02:00`.        |
-| `dtend`       | string | No       | End time, same format as `dtstart`.                                                                                   |
-| `uid`         | string | No       | Stable identifier. calfeed generates one if you omit it. Allowed characters are letters, digits, and `-` `_` `.` `@`. |
-| `description` | string | No       | Longer text for the event.                                                                                            |
-| `location`    | string | No       | Where the event happens.                                                                                              |
+| Field         | Type   | Required | Description                                                                                                    |
+| ------------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `summary`     | string | Yes      | Event title.                                                                                                   |
+| `dtstart`     | string | Yes      | Start time in ISO 8601 with an explicit offset, such as `2026-09-10T17:00:00Z` or `2026-09-10T19:00:00+02:00`. |
+| `dtend`       | string | No       | End time, same format as `dtstart`.                                                                            |
+| `description` | string | No       | Longer text for the event.                                                                                     |
+| `location`    | string | No       | Where the event happens.                                                                                       |
 
-Returns `201` with `{ "id", "uid", "updated": false }` for a new event, or `200` with
-`{ "updated": true }` when you update an existing `uid`.
+Returns `201` with `{ "uid": "<uuid>" }`. A `uid` in the request body returns `400` with
+`{ "error": "uid is assigned by the server" }`. Clients never choose it.
 
 calfeed validates the request before it stores anything, and every field must have the listed type.
 A `dtstart` or `dtend` value that isn't an ISO 8601 string with an explicit offset returns `400`
-with `{ "error": "invalid dtstart" }` or `{ "error": "invalid dtend" }`. A `uid` value that isn't a
-string of allowed characters returns `400` with `{ "error": "invalid uid" }`. A request body larger
-than 256&nbsp;KB returns `413` with `{ "error": "payload too large" }`, a body that fails to parse
-as JSON returns `400` with `{ "error": "invalid JSON" }`, and a body that isn't a JSON object
-returns `400` with `{ "error": "body must be a JSON object" }`.
+with `{ "error": "invalid dtstart" }` or `{ "error": "invalid dtend" }`. A request body larger than
+256&nbsp;KB returns `413` with `{ "error": "payload too large" }`, a body that fails to parse as
+JSON returns `400` with `{ "error": "invalid JSON" }`, and a body that isn't a JSON object returns
+`400` with `{ "error": "body must be a JSON object" }`.
+
+### List events
+
+`GET /events`
+
+List the calendar's events, sorted by `dtstart` like the feed. Requires the calendar token.
+
+Returns `200` with `{ "events": [ ... ] }`, where each entry carries `uid`, `summary`,
+`description`, `location`, `dtstart`, and `dtend`. Use the list to recover a lost `uid`, or to find
+and delete the extra copy after a retried create.
+
+### Update an event
+
+`PUT /events/:uid`
+
+Replace an event's data. Requires the calendar token. The body follows the same rules as
+`POST /events`, and the `uid` never changes, so subscribed apps keep treating it as the same event.
+An unknown `uid` returns `404` with `{ "error": "event not found" }`.
+
+Returns `200` with `{ "uid" }`.
 
 ### Delete an event
 
@@ -141,15 +161,15 @@ with any username. Without valid credentials, the server returns `401` with a
 
 ## Status codes
 
-| Code  | Meaning                                                                                                                              |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `200` | Success: event updated, event deleted, feed returned, token rotated, or password changed.                                            |
-| `201` | The server created a calendar or a new event.                                                                                        |
-| `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a date or `uid` is invalid, or the body holds malformed JSON.   |
-| `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong. |
-| `404` | Unknown feed token, unknown calendar, unknown event on delete, or unknown route.                                                     |
-| `413` | The request body is larger than the 256&nbsp;KB limit.                                                                               |
-| `500` | The server hit an unexpected error.                                                                                                  |
+| Code  | Meaning                                                                                                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200` | Success: events listed, event updated, event deleted, feed returned, token rotated, or password changed.                                                                              |
+| `201` | The server created a calendar or a new event.                                                                                                                                         |
+| `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a field has the wrong type, a date lacks its offset, the body carries a `uid`, or the body holds malformed JSON. |
+| `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong.                                                  |
+| `404` | Unknown feed token, unknown calendar, unknown event on update or delete, or unknown route.                                                                                            |
+| `413` | The request body is larger than the 256&nbsp;KB limit.                                                                                                                                |
+| `500` | The server hit an unexpected error.                                                                                                                                                   |
 
 ## Dates
 

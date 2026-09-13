@@ -57,16 +57,48 @@ components:
       examples: ['2026-09-20T17:00:00Z', '2026-09-20T19:00:00+02:00']
     EventResult:
       type: object
-      required: [id, uid, updated]
+      required: [uid]
       properties:
-        id:
-          type: string
         uid:
           type: string
-          description: The uid that keys this event, generated when not sent.
-        updated:
-          type: boolean
-          description: True when an existing event was updated in place.
+          format: uuid
+          description: >-
+            The event's only identifier: a server-assigned UUID, stable for the event's whole life.
+            Use it to update or delete the event.
+    EventInput:
+      type: object
+      required: [summary, dtstart]
+      properties:
+        summary:
+          type: string
+        dtstart:
+          $ref: '#/components/schemas/IsoDate'
+        dtend:
+          $ref: '#/components/schemas/IsoDate'
+        description:
+          type: string
+        location:
+          type: string
+      description: >-
+        A uid in the body is rejected with 400 — the server assigns it.
+    Event:
+      type: object
+      required: [uid, summary, dtstart]
+      properties:
+        uid:
+          type: string
+          format: uuid
+        summary:
+          type: string
+        description:
+          type: ['string', 'null']
+        location:
+          type: ['string', 'null']
+        dtstart:
+          type: string
+          description: Canonical ISO-UTC form.
+        dtend:
+          type: ['string', 'null']
     Deleted:
       type: object
       required: [deleted]
@@ -139,10 +171,36 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /events:
+    get:
+      tags: [events]
+      summary: List the calendar's events
+      operationId: listEvents
+      description: >-
+        Sorted by dtstart, like the feed. The recovery path of the CRUD model: recover a lost uid,
+        or find the extra copy after a retried create.
+      security:
+        - calendarToken: []
+      responses:
+        '200':
+          description: The calendar's events.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events]
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [events]
-      summary: Add or update an event (upsert by uid)
-      operationId: pushEvent
+      summary: Create an event
+      operationId: createEvent
+      description: >-
+        The server assigns the uid. Store it — updating and deleting go through it.
       security:
         - calendarToken: []
       requestBody:
@@ -150,40 +208,18 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [summary, dtstart]
-              properties:
-                summary:
-                  type: string
-                dtstart:
-                  $ref: '#/components/schemas/IsoDate'
-                dtend:
-                  $ref: '#/components/schemas/IsoDate'
-                uid:
-                  type: string
-                  pattern: '^[A-Za-z0-9._@-]+$'
-                  description: Stable identifier; generated when omitted.
-                description:
-                  type: string
-                location:
-                  type: string
+              $ref: '#/components/schemas/EventInput'
       responses:
-        '200':
-          description: An existing event with this uid was updated in place.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventResult'
         '201':
-          description: A new event was created.
+          description: Event created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventResult'
         '400':
           description: >-
-            Missing or wrongly typed field, invalid uid, invalid or offset-less date, malformed
-            JSON, or a body that is not a JSON object.
+            Missing or wrongly typed field, invalid or offset-less date, a uid in the body,
+            malformed JSON, or a body that is not a JSON object.
           content:
             application/json:
               schema:
@@ -198,6 +234,48 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /events/{uid}:
+    put:
+      tags: [events]
+      summary: Update an event
+      operationId: updateEvent
+      description: >-
+        Replaces the event's data; the uid never changes (RFC 5545 requires it stable across
+        revisions).
+      security:
+        - calendarToken: []
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      responses:
+        '200':
+          description: Event updated in place.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResult'
+        '400':
+          description: Same body rules as the create endpoint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No event in this calendar has that uid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags: [events]
       summary: Delete an event

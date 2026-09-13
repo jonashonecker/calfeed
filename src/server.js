@@ -2,7 +2,9 @@
  * The calfeed HTTP server.
  * Endpoints:
  *   POST   /calendars                  {name}          → create a calendar (administrator token)
- *   POST   /events                     {event fields}  → upsert an event (calendar token)
+ *   GET    /events                                     → list events (calendar token)
+ *   POST   /events                     {event fields}  → create an event (calendar token)
+ *   PUT    /events/:uid                {event fields}  → update an event (calendar token)
  *   DELETE /events/:uid                                → delete an event (calendar token)
  *   POST   /calendars/:id/rotate-feed                  → new feed token (calendar token)
  *   PUT    /calendars/:id/feed-password {password|null}→ set or clear Basic Auth (calendar token)

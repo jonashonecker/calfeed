@@ -20,7 +20,7 @@ them against each other line by line: every documented status code should appear
 When an endpoint gains a feature, its contract file is the one place to extend.
 
 - `contract/calendars.hurl` covers `POST /calendars`.
-- `contract/events.hurl` covers `POST /events` and `DELETE /events/:uid`.
+- `contract/events.hurl` covers the `/events` endpoints: create, list, update, and delete.
 - `contract/feed.hurl` covers `GET /cal/:feed_token.ics`, and closes with the full round trip:
   create, push, read, delete, empty feed.
 - `contract/feed-password.hurl` covers `PUT /calendars/:id/feed-password`.
