@@ -1,4 +1,4 @@
-# Why tokens appear only once
+# Why calfeed never stores tokens
 
 When you create a calendar or rotate a feed token, the response carries the token in plaintext, and
 that response is the only place it ever exists outside your hands. There is no call that shows a

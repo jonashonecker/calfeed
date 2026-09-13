@@ -34,4 +34,4 @@ stronger protection. See [Feed privacy](/docs/explanation/feed-privacy.md).
 - To understand how the feed token and password keep a feed private, read
   [Feed privacy](/docs/explanation/feed-privacy.md).
 - To understand why calfeed can never show a token twice, read
-  [Why tokens appear only once](/docs/explanation/why-tokens-appear-only-once.md).
+  [Why calfeed never stores tokens](/docs/explanation/why-calfeed-never-stores-tokens.md).
