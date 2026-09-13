@@ -40,13 +40,13 @@ Request body:
 
 Returns `201` with:
 
-| Field           | Description                                                              |
-| --------------- | ------------------------------------------------------------------------ |
-| `id`            | Calendar identifier used with the calendar token to manage the calendar. |
-| `name`          | The name you sent.                                                       |
-| `token`         | Calendar token for writing and management. Keep it private.              |
-| `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.            |
-| `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                              |
+| Field           | Description                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`            | Calendar identifier used with the calendar token to manage the calendar.                                               |
+| `name`          | The name you sent.                                                                                                     |
+| `token`         | Calendar token for writing and management. Keep it private: it appears only in this response and is never shown again. |
+| `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.                                                          |
+| `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                                                                            |
 
 ### Delete a calendar
 

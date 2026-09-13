@@ -33,3 +33,5 @@ stronger protection. See [Feed privacy](/docs/explanation/feed-privacy.md).
 - To see how the tokens appear in requests, read [API reference](/docs/reference/api.md).
 - To understand how the feed token and password keep a feed private, read
   [Feed privacy](/docs/explanation/feed-privacy.md).
+- To understand why calfeed can never show a token twice, read
+  [Why tokens appear only once](/docs/explanation/why-tokens-appear-only-once.md).
