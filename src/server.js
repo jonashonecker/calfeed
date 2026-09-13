@@ -27,10 +27,6 @@ const MAX_BODY_BYTES = 262144; // 256 KB
 // arbitrarily large material.
 const MAX_PASSWORD_LENGTH = 1024;
 
-// The uid allowlist (alphanumeric plus - _ . @) prevents CRLF injection
-// into the iCal UID line.
-const UID_RE = /^[A-Za-z0-9._@-]+$/;
-
 // Date inputs must be ISO 8601 WITH an explicit offset (Z or ±hh:mm).
 // Offset-less strings would silently shift with the server's timezone.
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
@@ -158,6 +154,53 @@ export function createApp(store = new SqliteStore()) {
     return cal;
   }
 
+  // Validates the writable event fields (presence, types, date rules) and
+  // returns them with canonical ISO-UTC dates, or sends the 400 and returns
+  // null. Shared by the create and update routes.
+  function validateEventFields(body, res) {
+    if (!body.summary || !body.dtstart) {
+      send(res, 400, { error: 'summary and dtstart required' });
+      return null;
+    }
+    // Types matter, not only presence: a boolean summary would pass the
+    // presence check and blow up at the SQLite binding as a 500.
+    if (typeof body.summary !== 'string') {
+      send(res, 400, { error: 'invalid summary' });
+      return null;
+    }
+    if (body.description != null && typeof body.description !== 'string') {
+      send(res, 400, { error: 'invalid description' });
+      return null;
+    }
+    if (body.location != null && typeof body.location !== 'string') {
+      send(res, 400, { error: 'invalid location' });
+      return null;
+    }
+    // The write boundary canonicalizes dates to ISO-UTC, so a broken or
+    // ambiguous date never reaches the database and poisons the feed or
+    // shifts with the server's timezone.
+    const dtstart = canonicalDate(body.dtstart);
+    if (!dtstart) {
+      send(res, 400, { error: 'invalid dtstart' });
+      return null;
+    }
+    let dtend = null;
+    if (body.dtend != null) {
+      dtend = canonicalDate(body.dtend);
+      if (!dtend) {
+        send(res, 400, { error: 'invalid dtend' });
+        return null;
+      }
+    }
+    return {
+      summary: body.summary,
+      description: body.description,
+      location: body.location,
+      dtstart,
+      dtend,
+    };
+  }
+
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, BASE_URL);
@@ -239,42 +282,18 @@ export function createApp(store = new SqliteStore()) {
         return send(res, 200, { protected: pw !== null });
       }
 
-      // POST /events: a client pushes an event (calendar token)
+      // POST /events: a client creates an event (calendar token)
       if (req.method === 'POST' && path === '/events') {
         const cal = requireCalendar(req, res);
         if (!cal) return;
         const body = await readJson(req);
-        if (!body.summary || !body.dtstart) {
-          return send(res, 400, { error: 'summary and dtstart required' });
+        // The server assigns the uid (a UUID); clients never choose it.
+        if (body.uid !== undefined) {
+          return send(res, 400, { error: 'uid is assigned by the server' });
         }
-        // Types matter, not only presence: a boolean summary would pass the
-        // presence check and blow up at the SQLite binding as a 500.
-        if (typeof body.summary !== 'string') {
-          return send(res, 400, { error: 'invalid summary' });
-        }
-        if (body.description != null && typeof body.description !== 'string') {
-          return send(res, 400, { error: 'invalid description' });
-        }
-        if (body.location != null && typeof body.location !== 'string') {
-          return send(res, 400, { error: 'invalid location' });
-        }
-        // uid (when given) must be a string on the allowlist → no iCal
-        // injection, and no falsy uid (0) silently replaced by a random one.
-        if (body.uid != null && (typeof body.uid !== 'string' || !UID_RE.test(body.uid))) {
-          return send(res, 400, { error: 'invalid uid' });
-        }
-        // The write boundary canonicalizes dates to ISO-UTC, so a broken or
-        // ambiguous date never reaches the database and poisons the feed or
-        // shifts with the server's timezone.
-        const dtstart = canonicalDate(body.dtstart);
-        if (!dtstart) return send(res, 400, { error: 'invalid dtstart' });
-        let dtend = null;
-        if (body.dtend != null) {
-          dtend = canonicalDate(body.dtend);
-          if (!dtend) return send(res, 400, { error: 'invalid dtend' });
-        }
-        const result = store.addEvent(cal.id, { ...body, dtstart, dtend });
-        return send(res, result.updated ? 200 : 201, result);
+        const fields = validateEventFields(body, res);
+        if (!fields) return;
+        return send(res, 201, store.createEvent(cal.id, fields));
       }
 
       // DELETE /events/:uid: a client deletes an event

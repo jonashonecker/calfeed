@@ -17,7 +17,6 @@ feed_url: jsonpath "$.subscribe_url"
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "special",
   "summary": "a, b; c \\ d",
   "description": "line1\nline2, x",
   "location": "Room 1; Wing A",
@@ -29,7 +28,6 @@ HTTP 201
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "utf8",
   "summary": "Grüße 🎉 Über",
   "dtstart": "2026-09-15T09:00:00Z"
 }
@@ -39,7 +37,6 @@ HTTP 201
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "nodtend",
   "summary": "Open ended",
   "dtstart": "2026-09-16T09:00:00Z"
 }
@@ -49,7 +46,6 @@ HTTP 201
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "longsummary",
   "summary": "This is a deliberately very long summary line that exceeds seventy five octets so the iCal folding logic has to split it across multiple physical lines",
   "dtstart": "2026-09-17T09:00:00Z"
 }
@@ -59,7 +55,6 @@ HTTP 201
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "earliest",
   "summary": "Pushed last starts first",
   "dtstart": "2026-09-13T09:00:00Z"
 }
@@ -103,7 +98,6 @@ body not contains "DTEND:"
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "withend",
   "summary": "Has an end",
   "dtstart": "2026-09-18T09:00:00Z",
   "dtend": "2026-09-18T10:00:00Z"

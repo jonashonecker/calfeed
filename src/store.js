@@ -33,16 +33,14 @@ export class SqliteStore {
         created_at      TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS events (
-        id           TEXT PRIMARY KEY,
+        uid          TEXT PRIMARY KEY,
         calendar_id  TEXT NOT NULL REFERENCES calendars(id),
-        uid          TEXT NOT NULL,
         summary      TEXT NOT NULL,
         description  TEXT,
         location     TEXT,
         dtstart      TEXT NOT NULL,
         dtend        TEXT,
-        created_at   TEXT NOT NULL,
-        UNIQUE(calendar_id, uid)
+        created_at   TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_events_cal ON events(calendar_id);
     `);
@@ -70,6 +68,54 @@ export class SqliteStore {
       this.db
         .prepare(`UPDATE calendars SET feed_token_hash=? WHERE id=?`)
         .run(hashToken(newFeedToken()), row.id);
+    }
+
+    // Legacy events tables carried a separate id column next to the uid.
+    // The uid is the primary key now, so rebuild the table (the standard
+    // SQLite migration pattern) and carry the rows over. Old uids were only
+    // unique per calendar; a cross-calendar collision gets a fresh UUID.
+    const eventCols = this.db
+      .prepare(`PRAGMA table_info(events)`)
+      .all()
+      .map((c) => c.name);
+    if (eventCols.includes('id')) {
+      const rows = this.db.prepare(`SELECT * FROM events`).all();
+      this.db.exec(`
+        CREATE TABLE events_new (
+          uid          TEXT PRIMARY KEY,
+          calendar_id  TEXT NOT NULL REFERENCES calendars(id),
+          summary      TEXT NOT NULL,
+          description  TEXT,
+          location     TEXT,
+          dtstart      TEXT NOT NULL,
+          dtend        TEXT,
+          created_at   TEXT NOT NULL
+        );
+      `);
+      const insert = this.db.prepare(`
+        INSERT INTO events_new (uid, calendar_id, summary, description, location, dtstart, dtend, created_at)
+        VALUES (?,?,?,?,?,?,?,?)
+      `);
+      const seen = new Set();
+      for (const r of rows) {
+        const uid = seen.has(r.uid) ? randomUUID() : r.uid;
+        seen.add(uid);
+        insert.run(
+          uid,
+          r.calendar_id,
+          r.summary,
+          r.description,
+          r.location,
+          r.dtstart,
+          r.dtend,
+          r.created_at,
+        );
+      }
+      this.db.exec(`
+        DROP TABLE events;
+        ALTER TABLE events_new RENAME TO events;
+        CREATE INDEX IF NOT EXISTS idx_events_cal ON events(calendar_id);
+      `);
     }
   }
 
@@ -131,45 +177,20 @@ export class SqliteStore {
     return r.changes > 0;
   }
 
-  addEvent(calendarId, { uid, summary, description, location, dtstart, dtend }) {
-    // ?? instead of ||: a falsy-but-valid uid must never be silently
-    // replaced by a random one (that would break upsert and delete).
-    const eventUid = uid ?? randomUUID();
-    const existing = this.db
-      .prepare('SELECT id FROM events WHERE calendar_id=? AND uid=?')
-      .get(calendarId, eventUid);
-
-    if (existing) {
-      this.db
-        .prepare(
-          `
-        UPDATE events SET summary=?, description=?, location=?, dtstart=?, dtend=?
-        WHERE calendar_id=? AND uid=?
-      `,
-        )
-        .run(
-          summary,
-          description ?? null,
-          location ?? null,
-          dtstart,
-          dtend ?? null,
-          calendarId,
-          eventUid,
-        );
-      return { id: existing.id, uid: eventUid, updated: true };
-    }
-    const id = randomUUID().slice(0, 12);
+  // Creates an event and assigns its uid: a server-generated UUID, the
+  // event's only identifier (and its primary key).
+  createEvent(calendarId, { summary, description, location, dtstart, dtend }) {
+    const uid = randomUUID();
     this.db
       .prepare(
         `
-      INSERT INTO events (id, calendar_id, uid, summary, description, location, dtstart, dtend, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?)
+      INSERT INTO events (uid, calendar_id, summary, description, location, dtstart, dtend, created_at)
+      VALUES (?,?,?,?,?,?,?,?)
     `,
       )
       .run(
-        id,
+        uid,
         calendarId,
-        eventUid,
         summary,
         description ?? null,
         location ?? null,
@@ -177,7 +198,7 @@ export class SqliteStore {
         dtend ?? null,
         new Date().toISOString(),
       );
-    return { id, uid: eventUid, updated: false };
+    return { uid };
   }
 
   listEvents(calendarId) {

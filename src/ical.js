@@ -58,10 +58,11 @@ export function buildICal(calendar, events) {
 
   for (const ev of events) {
     lines.push('BEGIN:VEVENT');
-    // Defense in depth: the API validates uids, but the generator owns the
+    // Bare server UUID, no product suffix (RFC 7986 discourages embedding
+    // host or product names). Defense in depth: the generator owns the
     // format and never emits control characters onto the UID line (rows
-    // from old databases or future import paths bypass the route check).
-    lines.push(`UID:${String(ev.uid).replace(/[^A-Za-z0-9._@-]/g, '')}@calfeed`);
+    // from old databases bypass today's server-side generation).
+    lines.push(`UID:${String(ev.uid).replace(/[^A-Za-z0-9._@-]/g, '')}`);
     lines.push(`DTSTAMP:${stamp}`);
     lines.push(`DTSTART:${toICalDate(ev.dtstart)}`);
     if (ev.dtend) lines.push(`DTEND:${toICalDate(ev.dtend)}`);

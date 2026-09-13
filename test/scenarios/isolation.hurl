@@ -1,6 +1,7 @@
 # Scenario test: cross-tenant isolation.
 # Two calendars A and B, each with its own token. B must not be able to touch
-# A's events, feed token, or feed password. Same uid in both calendars is fine.
+# A's events, feed token, or feed password — not even when B knows A's
+# event uids.
 # Variables: base, admin_token
 
 # ── Create calendar A ─────────────────────────────────────────────
@@ -27,18 +28,19 @@ b_id: jsonpath "$.id"
 b_token: jsonpath "$.token"
 b_feed: jsonpath "$.subscribe_url"
 
-# ── A pushes an event uid=secret ──────────────────────────────────
+# ── A pushes an event ─────────────────────────────────────────────
 POST {{base}}/events
 Authorization: Bearer {{a_token}}
 {
-  "uid": "secret",
   "summary": "A private meeting",
   "dtstart": "2026-09-12T09:00:00Z"
 }
 HTTP 201
+[Captures]
+a_event: jsonpath "$.uid"
 
-# ── B tries to delete A's event by uid → not found for B ─────────
-DELETE {{base}}/events/secret
+# ── B tries to delete A's event by its uid → not found for B ─────
+DELETE {{base}}/events/{{a_event}}
 Authorization: Bearer {{b_token}}
 HTTP 404
 [Asserts]
@@ -51,17 +53,14 @@ HTTP 200
 body contains "SUMMARY:A private meeting"
 body split "BEGIN:VEVENT" count == 2
 
-# ── B pushes its own event with the same uid=secret ──────────────
+# ── B pushes its own event ────────────────────────────────────────
 POST {{base}}/events
 Authorization: Bearer {{b_token}}
 {
-  "uid": "secret",
   "summary": "B own meeting",
   "dtstart": "2026-09-13T09:00:00Z"
 }
 HTTP 201
-[Asserts]
-jsonpath "$.updated" == false
 
 # ── B's feed shows only B's event ─────────────────────────────────
 GET {{b_feed}}

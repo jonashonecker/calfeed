@@ -17,12 +17,13 @@ feed_url: jsonpath "$.subscribe_url"
 POST {{base}}/events
 Authorization: Bearer {{cal_token}}
 {
-  "uid": "roundtrip-1",
   "summary": "Team meeting",
   "dtstart": "2026-09-11T09:00:00Z",
   "dtend": "2026-09-11T09:30:00Z"
 }
 HTTP 201
+[Captures]
+event_uid: jsonpath "$.uid"
 
 # ── The feed answers with iCalendar and cache headers ─────────────
 GET {{feed_url}}
@@ -34,6 +35,9 @@ body contains "BEGIN:VCALENDAR"
 body contains "VERSION:2.0"
 body contains "END:VCALENDAR"
 body contains "SUMMARY:Team meeting"
+# the UID line carries the bare server UUID, no product suffix (RFC 7986)
+body contains "UID:{{event_uid}}"
+body not contains "@calfeed"
 body split "BEGIN:VEVENT" count == 2
 
 # ── An unknown feed token is not found ────────────────────────────
@@ -45,7 +49,7 @@ GET {{base}}/cal/{{cal_id}}.ics
 HTTP 404
 
 # ── After deleting the event the feed is empty but valid ─────────
-DELETE {{base}}/events/roundtrip-1
+DELETE {{base}}/events/{{event_uid}}
 Authorization: Bearer {{cal_token}}
 HTTP 200
 
