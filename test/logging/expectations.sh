@@ -20,8 +20,8 @@ fail() {
 }
 
 # Deliberately loose: a line that carries a method and a status code counts,
-# whatever the separators look like. The format stays free to change.
-grep -qE '^(GET|POST|PUT|DELETE)\b.*\b[0-9]{3}\b' "$LOG" ||
+# whatever the format looks like (plain text, JSON, anything).
+grep -qE '\b(GET|POST|PUT|DELETE)\b.*\b[0-9]{3}\b' "$LOG" ||
   fail "no request lines with method and status found"
 
 grep -q '/cal/<redacted>' "$LOG" ||

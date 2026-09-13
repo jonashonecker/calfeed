@@ -220,7 +220,12 @@ export function createApp(store = new SqliteStore()) {
     res.on('finish', () => {
       const ms = (Number(process.hrtime.bigint() - started) / 1e6).toFixed(1);
       console.log(
-        `${req.method.padEnd(6)} | ${redactForLog(req.url).padEnd(45)} | ${res.statusCode} | ${`${ms}ms`.padStart(8)}`,
+        JSON.stringify({
+          method: req.method,
+          path: redactForLog(req.url),
+          status: res.statusCode,
+          ms: Number(ms),
+        }),
       );
     });
     try {
