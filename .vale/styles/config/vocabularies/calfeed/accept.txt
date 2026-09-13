@@ -4,6 +4,7 @@ auditable
 base64
 base64url
 boolean
+Caddy
 calfeed
 CLI
 canonicaliz(e|es|ed|ation)

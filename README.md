@@ -19,6 +19,7 @@ HTTP Basic authentication.
 > Practical step-by-step guides for the more experienced user
 
 - [Subscribe on iOS](/docs/how-to/subscribe-on-ios.md)
+- [Deploy on your own server](/docs/how-to/deploy-on-your-own-server.md)
 - [Run the tests](/docs/how-to/run-the-tests.md)
 
 ## 🔍 Reference
