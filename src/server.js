@@ -2,6 +2,7 @@
  * The calfeed HTTP server.
  * Endpoints:
  *   POST   /calendars                  {name}          → create a calendar (administrator token)
+ *   DELETE /calendars/:id                              → delete a calendar (administrator token)
  *   GET    /events                                     → list events (calendar token)
  *   POST   /events                     {event fields}  → create an event (calendar token)
  *   PUT    /events/:uid                {event fields}  → update an event (calendar token)
@@ -256,8 +257,19 @@ export function createApp(store = new SqliteStore()) {
         });
       }
 
+      // DELETE /calendars/:id: the administrator deletes a calendar, its
+      // events go with it, and the feed URL dies
+      let m = path.match(/^\/calendars\/([^/]+)$/);
+      if (req.method === 'DELETE' && m) {
+        if (!ADMIN_TOKEN || !safeEqual(bearer(req) ?? '', ADMIN_TOKEN)) {
+          return send(res, 401, { error: 'admin token required' });
+        }
+        const deleted = store.deleteCalendar(m[1]);
+        return send(res, deleted ? 200 : 404, { deleted });
+      }
+
       // POST /calendars/:id/rotate-feed: new feed token (calendar token)
-      let m = path.match(/^\/calendars\/([^/]+)\/rotate-feed$/);
+      m = path.match(/^\/calendars\/([^/]+)\/rotate-feed$/);
       if (req.method === 'POST' && m) {
         const cal = requireCalendar(req, res, m[1]);
         if (!cal) return;

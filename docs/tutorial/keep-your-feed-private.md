@@ -135,6 +135,17 @@ You now command both privacy levers: rotate when a URL leaks, and add a password
 isn't enough. Used together, a rotated URL plus a fresh password locks out everyone you didn't
 invite back.
 
+## Clean up
+
+Delete the practice calendar, so the experiment leaves nothing behind:
+
+```bash
+curl -X DELETE http://localhost:8787/calendars/3f9a2b1c \
+  -H "Authorization: Bearer my-secret-admin-token"
+```
+
+The response reports `{ "deleted": true }`, and the rotated feed URL stops resolving.
+
 ## Where to go next
 
 - To understand the model behind the two levers, see

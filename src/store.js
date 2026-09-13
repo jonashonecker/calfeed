@@ -134,6 +134,21 @@ export class SqliteStore {
 
   // The feed resolves through the feed_token, not the internal id. Hash the
   // incoming plaintext token and look it up against feed_token_hash.
+  // Deletes a calendar and its events in one transaction; the feed token
+  // hash goes with the row, so the feed URL dies immediately.
+  deleteCalendar(id) {
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('DELETE FROM events WHERE calendar_id=?').run(id);
+      const r = this.db.prepare('DELETE FROM calendars WHERE id=?').run(id);
+      this.db.exec('COMMIT');
+      return r.changes > 0;
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
+  }
+
   getCalendarByFeedToken(feedToken) {
     if (!feedToken) return null;
     return (

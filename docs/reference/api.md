@@ -14,7 +14,7 @@ calfeed uses two kinds of Bearer token in the `Authorization` header.
 
 | Token               | Set by                              | Grants                                                                                             |
 | ------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating calendars.                                                                                |
+| Administrator token | `CALFEED_ADMIN_TOKEN`               | Creating and deleting calendars.                                                                   |
 | Calendar token      | Returned when you create a calendar | Writing to the calendar, deleting from it, rotating its feed token, and setting its feed password. |
 
 The feed at `GET /cal/:feed_token.ics` needs no Bearer token. The long, unguessable `feed_token` in
@@ -44,6 +44,17 @@ Returns `201` with:
 | `token`         | Calendar token for writing and management. Keep it private.              |
 | `subscribe_url` | `http` or `https` URL of the feed, containing the feed token.            |
 | `webcal_url`    | Same URL with the `webcal` scheme, for iOS.                              |
+
+### Delete a calendar
+
+`DELETE /calendars/:id`
+
+Delete a calendar and all its events. Requires the administrator token. The calendar token can't
+delete its own calendar, so a leaked write token can never destroy one.
+
+Returns `200` with `{ "deleted": true }` if the calendar existed. Its feed URL stops resolving
+immediately, so subscribers lose the calendar on their next refresh. An unknown `id` returns `404`
+with `{ "deleted": false }`.
 
 ### Create an event
 
@@ -159,7 +170,7 @@ with any username. Without valid credentials, the server returns `401` with a
 
 | Code  | Meaning                                                                                                                                                                               |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `200` | Success: events listed, event updated, event deleted, feed returned, token rotated, or password changed.                                                                              |
+| `200` | Success: events listed, event updated, event or calendar deleted, feed returned, token rotated, or password changed.                                                                  |
 | `201` | The server created a calendar or a new event.                                                                                                                                         |
 | `400` | A required field such as `name`, `summary`, or `dtstart` is missing, a field has the wrong type, a date lacks its offset, the body carries a `uid`, or the body holds malformed JSON. |
 | `401` | The token is missing or wrong for the requested action, or the feed needs Basic authentication and the password is missing or wrong.                                                  |

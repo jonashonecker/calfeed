@@ -69,7 +69,87 @@ Authorization: Bearer {{cal_token}}
 }
 HTTP 401
 
-# ── There is no DELETE on /calendars ──────────────────────────────
+# ── The collection itself has no DELETE, only /calendars/:id ─────
 DELETE {{base}}/calendars
 Authorization: Bearer {{cal_token}}
 HTTP 404
+
+# ── Deleting a calendar needs the admin token ─────────────────────
+DELETE {{base}}/calendars/some-id
+HTTP 401
+
+# ── A calendar token cannot delete calendars ─────────────────────
+DELETE {{base}}/calendars/some-id
+Authorization: Bearer {{cal_token}}
+HTTP 401
+[Asserts]
+jsonpath "$.error" == "admin token required"
+
+# ── Deleting an unknown calendar is not found ─────────────────────
+DELETE {{base}}/calendars/ffffffff
+Authorization: Bearer {{admin_token}}
+HTTP 404
+[Asserts]
+jsonpath "$.deleted" == false
+
+# ── Deleting a calendar kills its feed and only its own events ───
+POST {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+{
+  "name": "Doomed"
+}
+HTTP 201
+[Captures]
+doomed_id: jsonpath "$.id"
+doomed_token: jsonpath "$.token"
+doomed_feed: jsonpath "$.subscribe_url"
+
+POST {{base}}/calendars
+Authorization: Bearer {{admin_token}}
+{
+  "name": "Survivor"
+}
+HTTP 201
+[Captures]
+survivor_token: jsonpath "$.token"
+survivor_feed: jsonpath "$.subscribe_url"
+
+POST {{base}}/events
+Authorization: Bearer {{doomed_token}}
+{
+  "summary": "Doomed event",
+  "dtstart": "2026-09-14T09:00:00Z"
+}
+HTTP 201
+
+POST {{base}}/events
+Authorization: Bearer {{survivor_token}}
+{
+  "summary": "Survivor event",
+  "dtstart": "2026-09-14T10:00:00Z"
+}
+HTTP 201
+
+DELETE {{base}}/calendars/{{doomed_id}}
+Authorization: Bearer {{admin_token}}
+HTTP 200
+[Asserts]
+jsonpath "$.deleted" == true
+
+# ── The deleted calendar's feed is gone ───────────────────────────
+GET {{doomed_feed}}
+HTTP 404
+
+# ── The other calendar keeps its feed and its events ─────────────
+GET {{survivor_feed}}
+HTTP 200
+[Asserts]
+body contains "SUMMARY:Survivor event"
+body split "BEGIN:VEVENT" count == 2
+
+# ── Deleting the same calendar twice reports not found ───────────
+DELETE {{base}}/calendars/{{doomed_id}}
+Authorization: Bearer {{admin_token}}
+HTTP 404
+[Asserts]
+jsonpath "$.deleted" == false

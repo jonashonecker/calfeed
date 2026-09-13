@@ -31,7 +31,7 @@ Only you can create calendars, so this command needs the administrator token. In
 terminal, ask the server for a new calendar named `Family`:
 
 ```bash
-curl -X POST http://localhost:8787/calendars \
+curl -X POST https://calfeed.app/calendars \
   -H "Authorization: Bearer my-secret-admin-token" \
   -H "Content-Type: application/json" \
   -d '{"name":"Family"}'
@@ -226,10 +226,28 @@ Refresh your calendar app or read the feed again: the standup has vanished and t
 That's the whole loop. Anything that can send HTTP can now put events on your calendar, and take
 them off again.
 
+## Clean up
+
+The practice calendar has served its purpose. Delete it with the administrator token and the `id`
+from the create-calendar response:
+
+```bash
+curl -X DELETE http://localhost:8787/calendars/3f9a2b1c \
+  -H "Authorization: Bearer my-secret-admin-token"
+```
+
+The response confirms it:
+
+```json
+{ "deleted": true }
+```
+
+The feed URL died with the calendar, so also remove the subscription from your calendar app.
+
 ## Where to go next
 
-You created a calendar, pushed, listed, moved, and deleted events, and subscribed to the feed. From
-here:
+You created a calendar, pushed, listed, moved, and deleted events, subscribed to the feed, and
+cleaned up after yourself. From here:
 
 - Continue with the second tutorial and learn the privacy model by using it:
   [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
