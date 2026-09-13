@@ -1,0 +1,19 @@
+meta {
+  name: Delete event
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{base_url}}/events/{{event_uid}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{calendar_token}}
+}
+
+docs {
+  Deletes the event addressed by event_uid.
+}

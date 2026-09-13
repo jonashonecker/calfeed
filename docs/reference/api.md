@@ -3,6 +3,10 @@
 calfeed exposes a small HTTP API. An administrator creates calendars. Clients push and delete
 events, and calendar apps read the feed.
 
+To explore the API interactively, open the `bruno/` folder in [Bruno](https://www.usebruno.com): one
+request per endpoint, environments for local and production, and the create requests save tokens and
+identifiers into environment variables for the requests that follow.
+
 ## Base URL
 
 The server listens on the port from `PORT`, which defaults to `8787`. The examples use

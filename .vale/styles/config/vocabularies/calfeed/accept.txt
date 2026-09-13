@@ -3,6 +3,7 @@ auditability
 auditable
 base64
 base64url
+Bruno
 boolean
 Caddy
 calfeed

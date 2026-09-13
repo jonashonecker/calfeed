@@ -1,0 +1,35 @@
+meta {
+  name: Create event
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{calendar_token}}
+}
+
+body:json {
+  {
+    "summary": "Dinner with Sam",
+    "dtstart": "2027-01-15T17:00:00Z",
+    "dtend": "2027-01-15T19:00:00Z",
+    "location": "Trattoria Rossi"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("event_uid", res.body.uid);
+  }
+}
+
+docs {
+  Creates an event (calendar token). Dates are ISO 8601 with an
+  explicit offset. Saves the server-assigned uid as event_uid.
+}

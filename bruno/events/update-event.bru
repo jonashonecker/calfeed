@@ -1,0 +1,29 @@
+meta {
+  name: Update event
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{base_url}}/events/{{event_uid}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{calendar_token}}
+}
+
+body:json {
+  {
+    "summary": "Dinner with Sam",
+    "dtstart": "2027-01-15T18:00:00Z",
+    "dtend": "2027-01-15T20:00:00Z",
+    "location": "Trattoria Rossi"
+  }
+}
+
+docs {
+  Replaces the event's data; the uid never changes. Same body rules
+  as Create event.
+}

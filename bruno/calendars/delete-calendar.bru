@@ -1,0 +1,20 @@
+meta {
+  name: Delete calendar
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{base_url}}/calendars/{{calendar_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+docs {
+  Deletes the calendar and all its events (administrator token).
+  The feed URL dies with it.
+}

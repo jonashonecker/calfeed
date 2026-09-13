@@ -1,0 +1,27 @@
+meta {
+  name: Rotate feed token
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/calendars/{{calendar_id}}/rotate-feed
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{calendar_token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setEnvVar("subscribe_url", res.body.subscribe_url);
+  }
+}
+
+docs {
+  Issues a new feed token: the old subscribe URL dies immediately.
+  Updates subscribe_url in the environment, so Read feed keeps
+  working.
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Read feed
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{subscribe_url}}
+  body: none
+  auth: none
+}
+
+docs {
+  Fetches the iCalendar feed over its unguessable URL. Needs no
+  token. For a password-protected feed, add Basic auth in the Auth
+  tab (any username, the feed password).
+}
