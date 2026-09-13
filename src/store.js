@@ -132,10 +132,6 @@ export class SqliteStore {
     return { id, name, token, feed_token: feedToken };
   }
 
-  getCalendar(id) {
-    return this.db.prepare('SELECT * FROM calendars WHERE id=?').get(id) ?? null;
-  }
-
   // The feed resolves through the feed_token, not the internal id. Hash the
   // incoming plaintext token and look it up against feed_token_hash.
   getCalendarByFeedToken(feedToken) {

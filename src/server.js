@@ -79,7 +79,8 @@ async function verifyFeedPassword(stored, candidate) {
 }
 
 export function createApp(store = new SqliteStore()) {
-  const ADMIN_TOKEN = process.env.CALFEED_ADMIN_TOKEN || 'dev-admin-token';
+  // No fallback: a missing token means calendar creation stays locked.
+  const ADMIN_TOKEN = process.env.CALFEED_ADMIN_TOKEN;
   const BASE_URL = process.env.CALFEED_BASE_URL || 'http://localhost:8787';
 
   async function readJson(req) {
@@ -239,7 +240,7 @@ export function createApp(store = new SqliteStore()) {
 
       // POST /calendars: the administrator creates a calendar
       if (req.method === 'POST' && path === '/calendars') {
-        if (!safeEqual(bearer(req) ?? '', ADMIN_TOKEN)) {
+        if (!ADMIN_TOKEN || !safeEqual(bearer(req) ?? '', ADMIN_TOKEN)) {
           return send(res, 401, { error: 'admin token required' });
         }
         const body = await readJson(req);
@@ -370,7 +371,7 @@ export function createApp(store = new SqliteStore()) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Fail fast: no silently working default administrator token on a real start.
   const t = process.env.CALFEED_ADMIN_TOKEN;
-  if (!t || t === 'dev-admin-token' || t === 'change-me') {
+  if (!t || t === 'change-me') {
     console.error(
       'FATAL: CALFEED_ADMIN_TOKEN must be set to a non-default value. ' +
         'Refusing to start with a missing or well-known token.',
