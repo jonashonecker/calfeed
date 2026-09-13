@@ -1,6 +1,6 @@
 # Create your first feed
 
-In this tutorial you'll start the calfeed server, create a calendar, push an event to it, read the
+In this tutorial you'll start the calfeed server, create a calendar, push and list events, read the
 calendar as an `.ics` feed, and subscribe to it in a calendar app. By the end you'll have a live,
 subscribable feed that updates whenever you push a new event, and you'll have used every part of
 calfeed you need for daily work.
@@ -147,6 +147,43 @@ export STANDUP_UID=9f091bf8-...
 The next time your calendar app refreshes the feed, the new event appears on January 16 without you
 touching the app.
 
+## List what's in the calendar
+
+You now have two events. Ask the server for the calendar's contents:
+
+```bash
+curl http://localhost:8787/events \
+  -H "Authorization: Bearer $CALFEED_TOKEN"
+```
+
+The response lists both events, sorted by start time:
+
+```json
+{
+  "events": [
+    {
+      "uid": "9d1f2e3a-...",
+      "summary": "Dinner with Sam",
+      "description": null,
+      "location": "Trattoria Rossi",
+      "dtstart": "2027-01-15T17:00:00.000Z",
+      "dtend": "2027-01-15T19:00:00.000Z"
+    },
+    {
+      "uid": "9f091bf8-...",
+      "summary": "Team standup",
+      "description": null,
+      "location": null,
+      "dtstart": "2027-01-16T08:00:00.000Z",
+      "dtend": null
+    }
+  ]
+}
+```
+
+This list is your safety net. If you ever lose an event's `uid`, or a retried push created a
+duplicate, this is where you find it again.
+
 ## Move the event
 
 The standup shifts to half past eight. Send the new state with `PUT` to the event's `uid`:
@@ -191,7 +228,8 @@ them off again.
 
 ## Where to go next
 
-You created a calendar, pushed, moved, and deleted events, and subscribed to the feed. From here:
+You created a calendar, pushed, listed, moved, and deleted events, and subscribed to the feed. From
+here:
 
 - Continue with the second tutorial and learn the privacy model by using it:
   [Keep your feed private](/docs/tutorial/keep-your-feed-private.md).
