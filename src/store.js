@@ -201,6 +201,19 @@ export class SqliteStore {
     return { uid };
   }
 
+  // Updates an event in place; the uid never changes (RFC 5545 requires a
+  // stable UID across revisions). Returns false when the calendar has no
+  // such event: the calendar scope is the tenancy check.
+  updateEvent(calendarId, uid, { summary, description, location, dtstart, dtend }) {
+    const r = this.db
+      .prepare(
+        `UPDATE events SET summary=?, description=?, location=?, dtstart=?, dtend=?
+         WHERE calendar_id=? AND uid=?`,
+      )
+      .run(summary, description ?? null, location ?? null, dtstart, dtend ?? null, calendarId, uid);
+    return r.changes > 0;
+  }
+
   listEvents(calendarId) {
     return this.db
       .prepare('SELECT * FROM events WHERE calendar_id=? ORDER BY dtstart')

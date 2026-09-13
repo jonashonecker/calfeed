@@ -209,6 +209,77 @@ Authorization: Bearer {{cal_token}}
 }
 HTTP 201
 
+# ── PUT needs a valid calendar token ──────────────────────────────
+PUT {{base}}/events/{{first_uid}}
+{
+  "summary": "No token",
+  "dtstart": "2026-09-11T10:00:00Z"
+}
+HTTP 401
+
+# ── PUT updates an existing event in place ────────────────────────
+PUT {{base}}/events/{{first_uid}}
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "First event (moved)",
+  "dtstart": "2026-09-11T10:00:00Z"
+}
+HTTP 200
+[Asserts]
+# the uid never changes across updates (RFC 5545)
+jsonpath "$.uid" == "{{first_uid}}"
+
+# ── The feed reflects the update, no duplicate ────────────────────
+GET {{feed_url}}
+HTTP 200
+[Asserts]
+body contains "SUMMARY:First event (moved)"
+body contains "DTSTART:20260911T100000Z"
+# three events: first (moved), offset input, under the limit
+body split "BEGIN:VEVENT" count == 4
+
+# ── PUT on an unknown uid is not found ────────────────────────────
+PUT {{base}}/events/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Ghost",
+  "dtstart": "2026-09-11T10:00:00Z"
+}
+HTTP 404
+[Asserts]
+jsonpath "$.error" == "event not found"
+
+# ── PUT validates the body like POST ──────────────────────────────
+PUT {{base}}/events/{{first_uid}}
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "No start date"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.error" == "summary and dtstart required"
+
+# ── PUT rejects a uid in the body too ─────────────────────────────
+PUT {{base}}/events/{{first_uid}}
+Authorization: Bearer {{cal_token}}
+{
+  "uid": "renamed",
+  "summary": "Rename attempt",
+  "dtstart": "2026-09-11T10:00:00Z"
+}
+HTTP 400
+[Asserts]
+jsonpath "$.error" == "uid is assigned by the server"
+
+# ── Malformed percent-encoding on PUT is a client error ──────────
+PUT {{base}}/events/%zz
+Authorization: Bearer {{cal_token}}
+{
+  "summary": "Broken path",
+  "dtstart": "2026-09-11T10:00:00Z"
+}
+HTTP 400
+
 # ── Deleting an event by its uid ──────────────────────────────────
 DELETE {{base}}/events/{{offset_uid}}
 Authorization: Bearer {{cal_token}}

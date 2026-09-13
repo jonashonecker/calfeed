@@ -296,6 +296,29 @@ export function createApp(store = new SqliteStore()) {
         return send(res, 201, store.createEvent(cal.id, fields));
       }
 
+      // PUT /events/:uid: a client updates an event (calendar token)
+      if (req.method === 'PUT' && path.startsWith('/events/')) {
+        const cal = requireCalendar(req, res);
+        if (!cal) return;
+        let uid;
+        try {
+          uid = decodeURIComponent(path.slice('/events/'.length));
+        } catch {
+          return send(res, 400, { error: 'invalid uid encoding' });
+        }
+        const body = await readJson(req);
+        // Creation fixes the uid once; it never changes across updates.
+        if (body.uid !== undefined) {
+          return send(res, 400, { error: 'uid is assigned by the server' });
+        }
+        const fields = validateEventFields(body, res);
+        if (!fields) return;
+        if (!store.updateEvent(cal.id, uid, fields)) {
+          return send(res, 404, { error: 'event not found' });
+        }
+        return send(res, 200, { uid });
+      }
+
       // DELETE /events/:uid: a client deletes an event
       if (req.method === 'DELETE' && path.startsWith('/events/')) {
         const cal = requireCalendar(req, res);

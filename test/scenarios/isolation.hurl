@@ -46,11 +46,21 @@ HTTP 404
 [Asserts]
 jsonpath "$.deleted" == false
 
-# ── A's feed still has the event ──────────────────────────────────
+# ── B cannot update A's event either ─────────────────────────────
+PUT {{base}}/events/{{a_event}}
+Authorization: Bearer {{b_token}}
+{
+  "summary": "hijacked",
+  "dtstart": "2026-09-12T09:00:00Z"
+}
+HTTP 404
+
+# ── A's feed still has the untouched event ────────────────────────
 GET {{a_feed}}
 HTTP 200
 [Asserts]
 body contains "SUMMARY:A private meeting"
+body not contains "SUMMARY:hijacked"
 body split "BEGIN:VEVENT" count == 2
 
 # ── B pushes its own event ────────────────────────────────────────
