@@ -14,8 +14,8 @@ administrator token to a non-default value before the server starts.
 ## The administrator token
 
 The `CALFEED_ADMIN_TOKEN` value guards `POST /calendars`. The server refuses to start when the token
-is unset or left at a well-known value such as `dev-admin-token` or `change-me`. In that case it
-prints an error and exits. Set your own value before starting, so nobody else can create calendars:
+is unset or left at the well-known placeholder `change-me`. In that case it prints an error and
+exits. Set your own value before starting, so nobody else can create calendars:
 
 ```bash
 CALFEED_ADMIN_TOKEN=a-long-random-string node src/server.js
