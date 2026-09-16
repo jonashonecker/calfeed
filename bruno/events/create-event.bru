@@ -25,11 +25,11 @@ body:json {
 
 script:post-response {
   if (res.status === 201) {
-    bru.setEnvVar("event_uid", res.body.uid);
+    bru.setVar("event_uid", res.body.uid);
   }
 }
 
 docs {
   Creates an event (calendar token). Dates are ISO 8601 with an
-  explicit offset. Saves the server-assigned uid as event_uid.
+  explicit offset. Saves the server-assigned uid as the runtime variable event_uid.
 }

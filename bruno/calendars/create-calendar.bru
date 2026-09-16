@@ -22,14 +22,15 @@ body:json {
 
 script:post-response {
   if (res.status === 201) {
-    bru.setEnvVar("calendar_id", res.body.id);
-    bru.setEnvVar("calendar_token", res.body.token);
-    bru.setEnvVar("subscribe_url", res.body.subscribe_url);
+    bru.setVar("calendar_id", res.body.id);
+    bru.setVar("calendar_token", res.body.token);
+    bru.setVar("subscribe_url", res.body.subscribe_url);
   }
 }
 
 docs {
   Creates a calendar (administrator token). Saves calendar_id,
-  calendar_token, and subscribe_url into the environment, so every
-  other request works right away.
+  calendar_token, and subscribe_url as runtime variables for this
+  session, so every other request works right away. Runtime variables
+  are never written to disk.
 }

@@ -16,12 +16,12 @@ auth:bearer {
 
 script:post-response {
   if (res.status === 200) {
-    bru.setEnvVar("subscribe_url", res.body.subscribe_url);
+    bru.setVar("subscribe_url", res.body.subscribe_url);
   }
 }
 
 docs {
   Issues a new feed token: the old subscribe URL dies immediately.
-  Updates subscribe_url in the environment, so Read feed keeps
+  Updates the subscribe_url runtime variable, so Read feed keeps
   working.
 }

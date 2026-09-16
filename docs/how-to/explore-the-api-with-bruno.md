@@ -29,12 +29,14 @@ The collection ships two environments. Select one in the environment picker:
 ## Let the variables do the work
 
 Send **calendars → Create calendar** first. Its post-response script saves the new calendar's
-`token`, `id`, and `subscribe_url` into the environment, and **events → Create event** saves the
+`token`, `id`, and `subscribe_url` as runtime variables, and **events → Create event** saves the
 `uid` of the event it creates. From then on, every other request just works: list, update, delete,
-read the feed, rotate, protect. After a rotation, the saved `subscribe_url` updates itself.
+read the feed, rotate, protect. After a rotation, the `subscribe_url` variable updates itself.
 
-To inspect or edit what the collection has remembered, open the environment settings: the captured
-values sit there as plain variables.
+Runtime variables live only in memory for the current session. Bruno never writes them to disk,
+which also keeps captured tokens out of the repository. To keep working with an existing calendar
+across sessions, add its `calendar_token` yourself as a secret variable in the environment: secrets
+stay on your machine.
 
 ## Be careful against production
 
